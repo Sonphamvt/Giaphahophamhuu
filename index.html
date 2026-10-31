@@ -35,7 +35,6 @@
             stroke-width: 1.5px;
         }
 
-        /* Hiệu ứng nhấp nháy phát sáng cho người sắp đến giỗ/sinh nhật */
         @keyframes pulse-glow-amber {
             0%, 100% { filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.8)); }
             50% { filter: drop-shadow(0 0 12px rgba(212, 175, 55, 1)); }
@@ -51,7 +50,6 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- Header / Navbar -->
     <header class="bg-crimson text-white shadow-lg sticky top-0 z-30 border-b-2 border-amber-gold">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -66,7 +64,6 @@
                 </div>
             </div>
 
-            <!-- Navigation Tabs -->
             <nav class="flex space-x-1 sm:space-x-2 mt-2 sm:mt-0">
                 <button onclick="switchTab('tree')" id="tab-tree" class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-amber-gold text-crimson font-bold shadow">
                     <i class="fa-solid fa-sitemap mr-1.5"></i>Sơ Đồ Gia Phả
@@ -79,7 +76,6 @@
                 </button>
             </nav>
 
-            <!-- Action Buttons -->
             <div class="flex items-center space-x-2 mt-2 sm:mt-0">
                 <button onclick="openAddModal()" class="bg-amber-gold hover:bg-amber-600 text-crimson font-bold px-3 py-1.5 rounded-md text-sm shadow flex items-center transition">
                     <i class="fa-solid fa-user-plus mr-1.5"></i>Thêm Thành Viên
@@ -98,10 +94,7 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
-
-        <!-- VIEW 1: SƠ ĐỒ CÂY GIA PHẢ -->
         <section id="view-tree" class="space-y-4">
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-wrap justify-between items-center text-sm text-amber-900">
                 <div class="flex items-center space-x-2">
@@ -109,7 +102,6 @@
                     <span>Kéo thả để di chuyển, cuộn chuột để thu phóng.</span>
                 </div>
                 
-                <!-- BỘ LỌC CHẾ ĐỘ XEM NỘI TỘC / NGOẠI TỘC -->
                 <div class="flex items-center space-x-3 my-1 sm:my-0">
                     <span class="font-bold text-xs text-amber-900 uppercase"><i class="fa-solid fa-eye mr-1"></i> Chế độ xem:</span>
                     <select id="view-mode" onchange="renderTree()" class="bg-white border border-amber-300 rounded px-2 py-1 text-xs font-bold text-crimson shadow-sm outline-none focus:border-crimson">
@@ -126,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- SVG Container -->
             <div class="bg-white border border-stone-200 rounded-xl shadow-inner relative overflow-hidden h-[800px]" id="tree-container">
                 <div class="absolute top-4 right-4 z-10 flex flex-col space-y-1 bg-white p-1 rounded border shadow-md">
                     <button onclick="zoomIn()" class="p-2 hover:bg-gray-100 rounded text-stone-700" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
@@ -137,7 +128,6 @@
             </div>
         </section>
 
-        <!-- VIEW 2: DANH SÁCH THÀNH VIÊN -->
         <section id="view-list" class="hidden space-y-4">
             <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex flex-wrap gap-3 justify-between items-center">
                 <div class="relative flex-grow max-w-md">
@@ -177,7 +167,6 @@
             </div>
         </section>
 
-        <!-- VIEW 3: DANH SÁCH NGÀY GIỖ -->
         <section id="view-anniversaries" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                 <h2 class="text-xl font-serif-title font-bold text-crimson mb-4 flex items-center">
@@ -198,10 +187,8 @@
                 </div>
             </div>
         </section>
-
     </main>
 
-    <!-- MODAL: THÊM / SỬA THÀNH VIÊN -->
     <div id="member-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
             <div class="bg-crimson text-white px-6 py-4 flex justify-between items-center border-b border-amber-gold">
@@ -227,7 +214,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1" title="Số nhỏ hiển thị bên trái, số lớn hiển thị bên phải">Thứ tự trái->phải</label>
+                        <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Thứ tự trái->phải</label>
                         <input type="number" id="form-order" min="1" max="100" placeholder="VD: 1, 2, 3" class="w-full p-2 border border-stone-300 rounded focus:border-crimson outline-none text-sm">
                     </div>
                     <div>
@@ -239,17 +226,15 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Năm sinh / Ngày sinh</label>
-                        <input type="text" id="form-birth" placeholder="VD: 15/08/1980 hoặc 1980" class="w-full p-2 border border-stone-300 rounded focus:border-crimson outline-none text-sm">
+                        <input type="text" id="form-birth" placeholder="VD: 1980" class="w-full p-2 border border-stone-300 rounded focus:border-crimson outline-none text-sm">
                     </div>
                 </div>
 
-                <!-- Link hình ảnh đại diện -->
                 <div>
                     <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Đường dẫn hình ảnh (URL Ảnh đại diện)</label>
                     <input type="url" id="form-avatar" placeholder="https://example.com/avatar.jpg" class="w-full p-2 border border-stone-300 rounded focus:border-crimson outline-none text-sm">
                 </div>
 
-                <!-- Fields khi ĐÃ MẤT -->
                 <div id="deceased-fields" class="hidden p-3 bg-red-50 rounded-lg border border-red-100 space-y-3">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -263,9 +248,8 @@
                     </div>
                 </div>
 
-                <!-- Fields khi CÒN SỐNG -->
                 <div id="living-fields" class="p-3 bg-blue-50/60 rounded-lg border border-blue-100 space-y-3">
-                    <p class="text-xs font-bold text-blue-900 uppercase"><i class="fa-solid fa-address-book mr-1"></i> Thông Tin Liên Lạc (Dành cho người còn sống)</p>
+                    <p class="text-xs font-bold text-blue-900 uppercase">Thông Tin Liên Lạc</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs text-stone-600 mb-1">Số điện thoại</label>
@@ -278,28 +262,27 @@
                     </div>
                     <div>
                         <label class="block text-xs text-stone-600 mb-1">Số nhà / Địa chỉ chi tiết</label>
-                        <input type="text" id="form-address" placeholder="VD: Số 33A, Đường 30/4, Vũng Tàu" class="w-full p-2 border border-stone-300 rounded outline-none text-sm bg-white">
+                        <input type="text" id="form-address" placeholder="VD: Vũng Tàu" class="w-full p-2 border border-stone-300 rounded outline-none text-sm bg-white">
                     </div>
                 </div>
 
-                <!-- Mối quan hệ -->
                 <div class="border-t border-stone-200 pt-3">
                     <p class="text-xs font-bold text-crimson uppercase mb-2">Mối quan hệ gia đình (Trong dòng họ)</p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs text-stone-600 mb-1">Cha (Father)</label>
+                            <label class="block text-xs text-stone-600 mb-1">Cha</label>
                             <select id="form-father" class="w-full p-2 border border-stone-300 rounded text-sm outline-none">
                                 <option value="">-- Không chọn --</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-stone-600 mb-1">Mẹ (Mother)</label>
+                            <label class="block text-xs text-stone-600 mb-1">Mẹ</label>
                             <select id="form-mother" class="w-full p-2 border border-stone-300 rounded text-sm outline-none">
                                 <option value="">-- Không chọn --</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-stone-600 mb-1">Vợ / Chồng (Spouse)</label>
+                            <label class="block text-xs text-stone-600 mb-1">Vợ / Chồng</label>
                             <select id="form-spouse" class="w-full p-2 border border-stone-300 rounded text-sm outline-none">
                                 <option value="">-- Chọn thành viên --</option>
                             </select>
@@ -307,62 +290,56 @@
                     </div>
                 </div>
 
-                <!-- Thông tin Bố Mẹ đẻ (Dành cho Dâu/Rể) có đầy đủ Ngày sinh, Trạng thái, Ngày giỗ -->
                 <div class="border-t border-stone-200 pt-3 bg-amber-50/70 p-3 rounded-lg border border-amber-200 space-y-3">
-                    <p class="text-xs font-bold text-amber-900 uppercase"><i class="fa-solid fa-house-user mr-1"></i> Bố Mẹ Đẻ (Dành cho Dâu / Rể - Hiển thị ở chế độ Ngoại Tộc)</p>
-                    
-                    <!-- Bố đẻ -->
+                    <p class="text-xs font-bold text-amber-900 uppercase">Bố Mẹ Đẻ (Dành cho Dâu / Rể)</p>
                     <div class="p-2 bg-white rounded border border-amber-200 space-y-2">
                         <p class="text-xs font-bold text-amber-800">Thông tin Bố đẻ</p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <input type="text" id="form-inlaw-father" placeholder="Họ tên Bố đẻ" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
-                            <input type="text" id="form-inlaw-father-birth" placeholder="Năm sinh (VD: 1950)" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
+                            <input type="text" id="form-inlaw-father-birth" placeholder="Năm sinh" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
                             <select id="form-inlaw-father-status" onchange="toggleInlawFields()" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
                                 <option value="Còn sống">Còn sống</option>
                                 <option value="Đã mất">Đã mất</option>
                             </select>
                         </div>
                         <div id="inlaw-father-death-box" class="hidden">
-                            <input type="text" id="form-inlaw-father-death" placeholder="Ngày giỗ Âm lịch (VD: 15/08 Âm Lịch)" class="w-full p-1.5 border border-red-200 rounded text-xs outline-none bg-red-50 text-red-900">
+                            <input type="text" id="form-inlaw-father-death" placeholder="Ngày giỗ Âm lịch" class="w-full p-1.5 border border-red-200 rounded text-xs outline-none bg-red-50 text-red-900">
                         </div>
                     </div>
-
-                    <!-- Mẹ đẻ -->
                     <div class="p-2 bg-white rounded border border-amber-200 space-y-2">
                         <p class="text-xs font-bold text-amber-800">Thông tin Mẹ đẻ</p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <input type="text" id="form-inlaw-mother" placeholder="Họ tên Mẹ đẻ" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
-                            <input type="text" id="form-inlaw-mother-birth" placeholder="Năm sinh (VD: 1952)" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
+                            <input type="text" id="form-inlaw-mother-birth" placeholder="Năm sinh" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
                             <select id="form-inlaw-mother-status" onchange="toggleInlawFields()" class="p-1.5 border border-stone-300 rounded text-xs outline-none">
                                 <option value="Còn sống">Còn sống</option>
                                 <option value="Đã mất">Đã mất</option>
                             </select>
                         </div>
                         <div id="inlaw-mother-death-box" class="hidden">
-                            <input type="text" id="form-inlaw-mother-death" placeholder="Ngày giỗ Âm lịch (VD: 20/09 Âm Lịch)" class="w-full p-1.5 border border-red-200 rounded text-xs outline-none bg-red-50 text-red-900">
+                            <input type="text" id="form-inlaw-mother-death" placeholder="Ngày giỗ Âm lịch" class="w-full p-1.5 border border-red-200 rounded text-xs outline-none bg-red-50 text-red-900">
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Quê quán / Nơi ở chung</label>
-                    <input type="text" id="form-location" placeholder="Vũng Tàu, Thái Bình..." class="w-full p-2 border border-stone-300 rounded text-sm outline-none">
+                    <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Quê quán</label>
+                    <input type="text" id="form-location" placeholder="Vũng Tàu..." class="w-full p-2 border border-stone-300 rounded text-sm outline-none">
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-stone-700 uppercase mb-1">Tiểu sử / Ghi chú</label>
-                    <textarea id="form-notes" rows="2" placeholder="Sự nghiệp, đóng góp..." class="w-full p-2 border border-stone-300 rounded text-sm outline-none"></textarea>
+                    <textarea id="form-notes" rows="2" class="w-full p-2 border border-stone-300 rounded text-sm outline-none"></textarea>
                 </div>
 
                 <div class="flex justify-end space-x-3 pt-4 border-t border-stone-200">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg text-sm hover:bg-stone-100">Hủy</button>
-                    <button type="submit" class="px-5 py-2 bg-crimson text-white rounded-lg text-sm font-bold hover:bg-red-900 shadow">Lưu Thành Viên</button>
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg text-sm">Hủy</button>
+                    <button type="submit" class="px-5 py-2 bg-crimson text-white rounded-lg text-sm font-bold shadow">Lưu Thành Viên</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- DRAWER: XEM CHI TIẾT THÀNH VIÊN -->
     <div id="detail-drawer" class="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out border-l border-stone-200 flex flex-col">
         <div class="bg-crimson text-white p-4 flex justify-between items-center border-b border-amber-gold">
             <h3 class="font-serif-title font-bold text-lg">Thông Tin Thành Viên</h3>
@@ -373,8 +350,6 @@
 
     <script>
         let members = [];
-
-        // Tải dữ liệu trực tiếp từ Google Sheets khi trang web vừa khởi động
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwOZLvFk9Vp02sQvZPdTzAM9GaxKcDufjB62R5R9V-FzM8Ld5sd3mJvfSdpo_epSEf0/exec";
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -382,11 +357,11 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log("Đã tải thành công dữ liệu từ Google Sheets:", data);
-                    members = data; // Gán dữ liệu vào biến members
+                    members = data;
                     migrateSpouseData();
                     recalculateAllGenerations();
                     updateGenerationFilterOptions();
-                    renderTree(); // Vẽ sơ đồ gia phả
+                    renderTree();
                     renderTable();
                     renderAnniversaries();
                 })
@@ -397,7 +372,6 @@
         });
 
         function migrateSpouseData() {
-            // Chuẩn hóa toàn bộ ID của mọi thành viên về dạng chuỗi (String) để tránh lệch kiểu dữ liệu
             members.forEach(m => {
                 m.id = String(m.id).trim();
                 if (m.fatherId) m.fatherId = String(m.fatherId).trim();
@@ -413,8 +387,6 @@
                 if (!Array.isArray(m.spouseIds)) {
                     m.spouseIds = m.spouseIds ? [m.spouseIds] : [];
                 }
-                
-                // Ép mọi phần tử spouseId về chuỗi
                 m.spouseIds = m.spouseIds.map(id => String(id).trim()).filter(Boolean);
 
                 if (m.spouseId && !m.spouseIds.includes(String(m.spouseId).trim())) {
@@ -422,7 +394,6 @@
                 }
             });
 
-            // Đồng bộ chéo hai chiều quan hệ vợ/chồng bằng so sánh chuỗi
             members.forEach(m => {
                 if (Array.isArray(m.spouseIds)) {
                     m.spouseIds.forEach(spouseId => {
@@ -470,19 +441,19 @@
                             renderTree();
                             renderTable();
                             renderAnniversaries();
-                            alert("Khôi phục và đồng bộ dữ liệu từ file thành công!");
+                            alert("Khôi phục thành công!");
                         } else {
-                            alert("File dữ liệu không đúng định dạng!");
+                            alert("File không đúng định dạng!");
                         }
                     } catch (err) {
-                        alert("Lỗi khi đọc file JSON!");
+                        alert("Lỗi đọc file JSON!");
                     }
                 };
             }
         }
 
         function resetData() {
-            if (confirm("Khôi phục về dữ liệu họ Phạm Hữu ban đầu?")) {
+            if (confirm("Khôi phục về dữ liệu ban đầu?")) {
                 location.reload();
             }
         }
@@ -598,19 +569,18 @@
             return match ? parseInt(match[0]) : 9999;
         }
 
-        /* --- BẢNG TRA CỨU ÂM LỊCH SANG DƯƠNG LỊCH CHUẨN XÁC NĂM 2026 --- */
         const lunarMonthStart2026 = {
-            1: { m: 2, d: 17 },   // Mùng 1 Thg 1 Âm = 17/02 Dương
-            2: { m: 3, d: 19 },   // Mùng 1 Thg 2 Âm = 19/03 Dương
-            3: { m: 4, d: 17 },   // Mùng 1 Thg 3 Âm = 17/04 Dương
-            4: { m: 5, d: 17 },   // Mùng 1 Thg 4 Âm = 17/05 Dương
-            5: { m: 6, d: 15 },   // Mùng 1 Thg 5 Âm = 15/06 Dương
-            6: { m: 7, d: 15 },   // Mùng 1 Thg 6 Âm = 15/07 Dương
-            7: { m: 8, d: 13 },   // Mùng 1 Thg 7 Âm = 13/08 Dương
-            8: { m: 9, d: 12 },   // Mùng 1 Thg 8 Âm = 12/09 Dương
-            9: { m: 10, d: 10 },  // Mùng 1 Thg 9 Âm = 10/10 Dương
-            10: { m: 11, d: 9 },  // Mùng 1 Thg 10 Âm = 09/11 Dương
-            11: { m: 12, d: 9 },  // Mùng 1 Thg 11 Âm = 09/12 Dương
+            1: { m: 2, d: 17 },
+            2: { m: 3, d: 19 },
+            3: { m: 4, d: 17 },
+            4: { m: 5, d: 17 },
+            5: { m: 6, d: 15 },
+            6: { m: 7, d: 15 },
+            7: { m: 8, d: 13 },
+            8: { m: 9, d: 12 },
+            9: { m: 10, d: 10 },
+            10: { m: 11, d: 9 },
+            11: { m: 12, d: 9 },
             12: { m: 2027, d: 1, m_idx: 1, day_idx: 8 }
         };
 
@@ -624,14 +594,12 @@
             return { month: targetSolar.getMonth() + 1, day: targetSolar.getDate() };
         }
 
-        /* --- HÀM TÍNH KHOẢNG CÁCH NGÀY CHUẨN XÁC ĐẾN TRƯỚC 1 TUẦN --- */
         function checkUpcomingAnniversary(deathDateStr) {
             if (!deathDateStr) return { isUpcoming: false };
             const match = String(deathDateStr).match(/(\d{1,2})\/(\d{1,2})/);
             if (match) {
                 const lunarDay = parseInt(match[1]);
                 const lunarMonth = parseInt(match[2]);
-
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
@@ -655,7 +623,6 @@
                 if (match) {
                     const lunarDay = parseInt(match[1]);
                     const lunarMonth = parseInt(match[2]);
-
                     const solar = convertLunarToSolar(lunarMonth, lunarDay);
                     let daysLeft = calculateDaysUntil(today, solar.month, solar.day);
 
@@ -669,7 +636,6 @@
                 if (match) {
                     const birthDay = parseInt(match[1]);
                     const birthMonth = parseInt(match[2]);
-
                     let daysLeft = calculateDaysUntil(today, birthMonth, birthDay);
                     if (daysLeft >= 0 && daysLeft <= 7) {
                         return { isUpcoming: true, type: 'sinh nhật', daysLeft: daysLeft };
@@ -682,11 +648,9 @@
         function calculateDaysUntil(todayObj, targetM, targetD) {
             const thisYear = todayObj.getFullYear();
             let targetDate = new Date(thisYear, targetM - 1, targetD, 0, 0, 0, 0);
-            
             if (targetDate < todayObj) {
                 targetDate.setFullYear(thisYear + 1);
             }
-            
             const diffTime = targetDate.getTime() - todayObj.getTime();
             return Math.round(diffTime / (1000 * 60 * 60 * 24));
         }
@@ -694,7 +658,6 @@
         function getParentNamesDisplay(member) {
             const father = members.find(item => item.id === member.fatherId);
             const mother = members.find(item => item.id === member.motherId);
-
             if (father || mother) {
                 return `${father ? father.name : ''} ${mother ? (father ? ' / ' : '') + mother.name : ''}`;
             } else if (member.inlawFather || member.inlawMother) {
@@ -741,12 +704,10 @@
             function buildHierarchy(memberId) {
                 const m = members.find(item => item.id === memberId);
                 if (!m || addedNodeIds.has(m.id)) return null;
-                
                 addedNodeIds.add(m.id);
 
                 let children = [];
                 const isCurrentMemberMale = (m.gender === 'Nam' || m.generation === 1);
-                
                 if (viewMode === 'all' || isCurrentMemberMale) {
                     children = members.filter(item => (item.fatherId === memberId || item.motherId === memberId) && !addedNodeIds.has(item.id));
                 }
@@ -779,7 +740,6 @@
             }
 
             const root = d3.hierarchy(hierarchyData);
-
             const g = svg.append("g");
 
             zoomHandler = d3.zoom().on("zoom", (event) => {
@@ -875,7 +835,6 @@
                     }
                 });
 
-            // VẼ VỢ/CHỒNG NỐI NGANG VÀ THẺ BỐ/MẸ ĐẺ NGOẠI TỘC
             nodes.each(function(d) {
                 const currentId = d.data.id;
                 const currentMember = members.find(m => m.id === currentId);
@@ -939,7 +898,6 @@
                     if (spouse.status === 'Đã mất') {
                         const spouseRibbon = spouseGroup.append("g")
                             .attr("clip-path", "url(#card-clip)");
-
                         spouseRibbon.append("path")
                             .attr("d", "M -80 -25 L -50 -25 L -80 5 Z")
                             .attr("fill", "#1c1917");
@@ -973,7 +931,6 @@
                             }
                         });
 
-                    // CHỈ VẼ BỐ MẸ ĐẺ NGOẠI TỘC KHI CHẾ ĐỘ XEM LÀ "all" (CẢ NỘI TỘC & NGOẠI TỘC)
                     if (viewMode === 'all' && (spouse.inlawFather || spouse.inlawMother)) {
                         const inlawGroup = spouseGroup.append("g").attr("transform", "translate(0, -65)");
 
@@ -1000,7 +957,7 @@
                                     .append("rect").attr("width", 110).attr("height", 36).attr("x", -55).attr("y", -18).attr("rx", 6);
                             }
 
-                            const rect = card.append("rect")
+                            card.append("rect")
                                 .attr("width", 110)
                                 .attr("height", 36)
                                 .attr("x", -55)
@@ -1083,16 +1040,13 @@
 
             filtered.forEach(m => {
                 const parentNames = getParentNamesDisplay(m);
-                
                 let allSpouseIds = new Set(m.spouseIds || []);
                 members.forEach(other => {
                     if ((other.spouseIds || []).includes(m.id)) allSpouseIds.add(other.id);
                 });
                 const spouses = Array.from(allSpouseIds).map(id => members.find(s => s.id === id)).filter(Boolean);
                 const spouseNames = spouses.length > 0 ? spouses.map(s => s.name).join(', ') : '-';
-                
                 const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear || '-'}`;
-
                 const check = checkUpcomingMemberAnniversary(m);
                 const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';
 
@@ -1100,9 +1054,8 @@
                 tr.className = `hover:bg-stone-50 transition ${highlightBg}`;
                 tr.innerHTML = `
                     <td class="p-3 font-semibold text-stone-800 flex items-center space-x-2">
-                        ${m.avatar ? `<img src="${m.avatar}" class="w-8 h-8 rounded-full object-cover border border-stone-300">` : `<div class="w-8 h-8 rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-xs"><i class="fa-solid ${m.gender === 'Nam' ? 'fa-user' : 'fa-user'}"></i></div>`}
+                        ${m.avatar ? `<img src="${m.avatar}" class="w-8 h-8 rounded-full object-cover border border-stone-300">` : `<div class="w-8 h-8 rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div>`}
                         <button onclick="showDetail('${m.id}')" class="text-crimson hover:underline">${m.name}</button>
-                        ${check.isUpcoming ? `<span class="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 shadow-sm">${check.type === 'giỗ' ? '🕯️' : '🎂'} Sắp tới ${check.type}</span>` : ''}
                     </td>
                     <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-xs">Đời F${m.generation || '?'}</span></td>
                     <td class="p-3">${m.gender === 'Nam' ? '<span class="text-blue-600 font-semibold"><i class="fa-solid fa-mars"></i> Nam</span>' : '<span class="text-pink-600 font-semibold"><i class="fa-solid fa-venus"></i> Nữ</span>'}</td>
@@ -1122,10 +1075,8 @@
         function renderAnniversaries() {
             const tbody = document.getElementById('anniversary-table-body');
             tbody.innerHTML = '';
-
             let anniversaryList = [];
 
-            // 1. Thêm thành viên nội tộc đã mất
             members.filter(m => m.status === 'Đã mất').forEach(m => {
                 anniversaryList.push({
                     name: m.name,
@@ -1135,7 +1086,6 @@
                 });
             });
 
-            // 2. Thêm bố/mẹ đẻ của dâu/rể đã mất
             members.forEach(m => {
                 let allSpouseIds = new Set(m.spouseIds || []);
                 members.forEach(other => {
@@ -1172,7 +1122,6 @@
             anniversaryList.forEach(item => {
                 const check = checkUpcomingAnniversary(item.deathDate);
                 const highlightClass = check.isUpcoming ? 'bg-amber-100/80 font-bold border-l-4 border-amber-600' : '';
-
                 const tr = document.createElement('tr');
                 tr.className = highlightClass;
                 tr.innerHTML = `
@@ -1193,7 +1142,6 @@
             if (!m) return;
 
             const parentNames = getParentNamesDisplay(m);
-            
             let allSpouseIds = new Set(m.spouseIds || []);
             members.forEach(other => {
                 if ((other.spouseIds || []).includes(m.id)) allSpouseIds.add(other.id);
@@ -1235,113 +1183,24 @@
             const content = document.getElementById('drawer-content');
             content.innerHTML = `
                 <div class="text-center border-b border-stone-200 pb-4">
-                    ${m.avatar ? `
-                        <img src="${m.avatar}" class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-amber-gold mb-2 shadow">
-                    ` : `
-                        <div class="w-20 h-20 mx-auto rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-3xl font-bold mb-2 shadow">
-                            <i class="fa-solid ${m.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-nurse'}"></i>
-                        </div>
-                    `}
+                    ${m.avatar ? `<img src="${m.avatar}" class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-amber-gold mb-2 shadow">` : `<div class="w-20 h-20 mx-auto rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-3xl font-bold mb-2 shadow"><i class="fa-solid fa-user"></i></div>`}
                     <h4 class="text-xl font-bold font-serif-title text-stone-800">${m.name}</h4>
-                    <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-bold rounded-full text-xs mt-1">Thế hệ / Đời thứ F${m.generation || '?'} ${m.orderIndex ? '• Thứ tự: '+m.orderIndex : ''}</span>
+                    <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-bold rounded-full text-xs mt-1">Đời F${m.generation || '?'}</span>
                 </div>
 
                 <div class="space-y-3 text-sm">
-                    <div class="flex justify-between border-b pb-2">
-                        <span class="text-stone-500">Giới tính:</span>
-                        <span class="font-semibold">${m.gender}</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-2">
-                        <span class="text-stone-500">Trạng thái:</span>
-                        <span class="font-semibold ${m.status === 'Còn sống' ? 'text-green-600' : 'text-red-600'}">${m.status}</span>
-                    </div>
-                    <div class="flex justify-between border-b pb-2">
-                        <span class="text-stone-500">${m.status === 'Đã mất' ? 'Ngày giỗ:' : 'Năm sinh / Ngày sinh:'}</span>
-                        <span class="font-semibold">${m.status === 'Đã mất' ? (m.deathDate || 'Chưa rõ') : (m.birthYear || 'Chưa rõ')}</span>
-                    </div>
-
-                    ${m.status === 'Đã mất' ? `
-                        <div class="p-3 bg-red-50 rounded-lg space-y-1 text-xs text-red-900">
-                            <p><strong>Ngày giỗ:</strong> ${m.deathDate || 'Chưa cập nhật'}</p>
-                            <p><strong>Nơi an táng:</strong> ${m.burialPlace || 'Chưa cập nhật'}</p>
-                        </div>
-                    ` : `
-                        <div class="p-3 bg-blue-50/70 rounded-lg space-y-1 text-xs text-blue-900 border border-blue-100">
-                            <p class="font-bold border-b border-blue-200 pb-1 text-crimson"><i class="fa-solid id-card mr-1"></i> Thông Tin Liên Lạc:</p>
-                            <p><strong>Số điện thoại:</strong> ${m.phone || 'Chưa cập nhật'}</p>
-                            <p><strong>Email:</strong> ${m.email || 'Chưa cập nhật'}</p>
-                            <p><strong>Địa chỉ / Số nhà:</strong> ${m.address || 'Chưa cập nhật'}</p>
-                        </div>
-                    `}
-
-                    <div class="border-b pb-2">
-                        <span class="text-stone-500 block mb-1">Cha / Mẹ:</span>
-                        <p class="font-semibold text-stone-800">${parentNames}</p>
-                    </div>
-
-                    <div class="border-b pb-2">
-                        <span class="text-stone-500 block mb-1">Vợ / Chồng:</span>
-                        <p class="font-semibold text-stone-800">${spouseDisplay}</p>
-                    </div>
-
-                    ${(m.inlawFather || m.inlawMother) ? `
-                        <div class="p-3 bg-amber-50 rounded-lg space-y-2 text-xs border border-amber-200">
-                            <p class="font-bold border-b border-amber-200 pb-1 text-crimson"><i class="fa-solid fa-house-user mr-1"></i> Bố Mẹ Đẻ (Thông Gia):</p>
-                            ${m.inlawFather ? `
-                                <div class="pl-2">
-                                    <p><strong>Bố đẻ:</strong> ${m.inlawFather} (${m.inlawFatherStatus || 'Còn sống'})</p>
-                                    <p>${m.inlawFatherStatus === 'Đã mất' ? '🕯️ Giỗ: ' + (m.inlawFatherDeath || 'Chưa rõ') : '📅 Sinh: ' + (m.inlawFatherBirth || 'Chưa rõ')}</p>
-                                </div>
-                            ` : ''}
-                            ${m.inlawMother ? `
-                                <div class="pl-2 pt-1 border-t border-amber-100">
-                                    <p><strong>Mẹ đẻ:</strong> ${m.inlawMother} (${m.inlawMotherStatus || 'Còn sống'})</p>
-                                    <p>${m.inlawMotherStatus === 'Đã mất' ? '🕯️ Giỗ: ' + (m.inlawMotherDeath || 'Chưa rõ') : '📅 Sinh: ' + (m.inlawMotherBirth || 'Chưa rõ')}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-
-                    <div class="border-b pb-2">
-                        <span class="text-stone-500 block mb-1">Con cái (${children.length}):</span>
-                        <div class="flex flex-wrap gap-1">
-                            ${children.length > 0 ? children.map(c => `<span class="px-2 py-0.5 bg-stone-100 rounded text-xs">${c.name} ${c.birthYear ? '('+c.birthYear+')' : ''}</span>`).join('') : '<span class="text-stone-400">Chưa có</span>'}
-                        </div>
-                    </div>
-
-                    ${inlawList.length > 0 ? `
-                        <div class="p-3 bg-amber-50 rounded-lg space-y-2 text-xs border border-amber-200">
-                            <p class="font-bold border-b border-amber-200 pb-1 text-crimson flex items-center">
-                                <i class="fa-solid fa-users-rectangle mr-1.5 text-amber-600"></i>
-                                Danh Sách Các Ông Bà Thông Gia (${inlawList.length}):
-                            </p>
-                            ${inlawList.map(item => `
-                                <div class="bg-white p-2 rounded border border-amber-100 shadow-sm space-y-0.5">
-                                    <p class="text-amber-900 font-semibold">• Thông gia nhà ${item.relationType} (${item.spouseName} - ${item.spouseRole} ${item.childName}):</p>
-                                    <p class="text-stone-600 pl-3">- Ông thông gia: <strong>${item.inlawFather || 'Chưa rõ'}</strong></p>
-                                    <p class="text-stone-600 pl-3">- Bà thông gia: <strong>${item.inlawMother || 'Chưa rõ'}</strong></p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-
-                    <div class="border-b pb-2">
-                        <span class="text-stone-500 block mb-1">Quê quán / Nơi ở chung:</span>
-                        <p class="text-stone-800">${m.location || 'Chưa cập nhật'}</p>
-                    </div>
-
-                    <div>
-                        <span class="text-stone-500 block mb-1">Tiểu sử / Ghi chú:</span>
-                        <p class="text-stone-800 bg-stone-50 p-2 rounded text-xs leading-relaxed">${m.notes || 'Không có ghi chú.'}</p>
-                    </div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-stone-500">Giới tính:</span><span class="font-semibold">${m.gender}</span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-stone-500">Trạng thái:</span><span class="font-semibold">${m.status}</span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-stone-500">Cha / Mẹ:</span><span class="font-semibold text-stone-800">${parentNames}</span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-stone-500">Vợ / Chồng:</span><span class="font-semibold text-stone-800">${spouseDisplay}</span></div>
+                    <div><span class="text-stone-500 block mb-1">Ghi chú:</span><p class="text-stone-800 bg-stone-50 p-2 rounded text-xs">${m.notes || 'Không có.'}</p></div>
                 </div>
 
                 <div class="pt-4 flex space-x-2">
-                    <button onclick="openEditModal('${m.id}')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 transition">Chỉnh Sửa</button>
+                    <button onclick="openEditModal('${m.id}')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm">Chỉnh Sửa</button>
                     <button onclick="closeDrawer()" class="px-4 py-2 border border-stone-300 rounded-lg text-sm">Đóng</button>
                 </div>
             `;
-
             document.getElementById('detail-drawer').classList.remove('translate-x-full');
         }
 
@@ -1370,8 +1229,6 @@
             document.getElementById('modal-title').innerText = "Thêm Thành Viên Mới";
             document.getElementById('member-form').reset();
             document.getElementById('member-id').value = '';
-            document.getElementById('form-order').value = '';
-            document.getElementById('form-avatar').value = '';
             populateDropdowns();
             toggleStatusFields();
             toggleInlawFields();
@@ -1389,32 +1246,13 @@
             document.getElementById('member-id').value = m.id;
             document.getElementById('form-name').value = m.name;
             document.getElementById('form-gender').value = m.gender;
-            document.getElementById('form-order').value = m.orderIndex !== undefined ? m.orderIndex : '';
-            document.getElementById('form-avatar').value = m.avatar || '';
             document.getElementById('form-status').value = m.status;
             document.getElementById('form-birth').value = m.birthYear || '';
             document.getElementById('form-death').value = m.deathDate || '';
-            document.getElementById('form-burial').value = m.burialPlace || '';
-            document.getElementById('form-phone').value = m.phone || '';
-            document.getElementById('form-email').value = m.email || '';
-            document.getElementById('form-address').value = m.address || '';
             document.getElementById('form-father').value = m.fatherId || '';
             document.getElementById('form-mother').value = m.motherId || '';
             document.getElementById('form-spouse').value = (m.spouseIds && m.spouseIds.length > 0) ? m.spouseIds[0] : '';
             
-            document.getElementById('form-inlaw-father').value = m.inlawFather || '';
-            document.getElementById('form-inlaw-father-birth').value = m.inlawFatherBirth || '';
-            document.getElementById('form-inlaw-father-status').value = m.inlawFatherStatus || 'Còn sống';
-            document.getElementById('form-inlaw-father-death').value = m.inlawFatherDeath || '';
-
-            document.getElementById('form-inlaw-mother').value = m.inlawMother || '';
-            document.getElementById('form-inlaw-mother-birth').value = m.inlawMotherBirth || '';
-            document.getElementById('form-inlaw-mother-status').value = m.inlawMotherStatus || 'Còn sống';
-            document.getElementById('form-inlaw-mother-death').value = m.inlawMotherDeath || '';
-
-            document.getElementById('form-location').value = m.location || '';
-            document.getElementById('form-notes').value = m.notes || '';
-
             toggleStatusFields();
             toggleInlawFields();
             document.getElementById('member-modal').classList.remove('hidden');
@@ -1441,7 +1279,6 @@
         function toggleInlawFields() {
             const fStatus = document.getElementById('form-inlaw-father-status').value;
             const mStatus = document.getElementById('form-inlaw-mother-status').value;
-
             const fBox = document.getElementById('inlaw-father-death-box');
             const mBox = document.getElementById('inlaw-mother-death-box');
 
@@ -1456,7 +1293,6 @@
             e.preventDefault();
             const id = document.getElementById('member-id').value || Date.now().toString();
             const status = document.getElementById('form-status').value;
-            
             const fatherId = document.getElementById('form-father').value || null;
             const newSpouseId = document.getElementById('form-spouse').value || null;
 
@@ -1514,7 +1350,6 @@
             });
 
             recalculateAllGenerations();
-
             saveMembers();
             closeModal();
             updateGenerationFilterOptions();
@@ -1524,7 +1359,7 @@
         }
 
         function deleteMember(id) {
-            if (confirm("Ông có chắc chắn muốn xóa thành viên này khỏi gia phả?")) {
+            if (confirm("Ông có chắc chắn muốn xóa thành viên này?")) {
                 members = members.filter(m => m.id !== id);
                 members.forEach(m => {
                     if (m.fatherId === id) m.fatherId = null;
@@ -1533,9 +1368,7 @@
                         m.spouseIds = m.spouseIds.filter(sId => sId !== id);
                     }
                 });
-                
                 recalculateAllGenerations();
-
                 saveMembers();
                 updateGenerationFilterOptions();
                 renderTree();
