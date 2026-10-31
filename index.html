@@ -396,9 +396,13 @@
                 });
         });
 
-        function migrateSpouseData() {
+       function migrateSpouseData() {
+            // Chuẩn hóa toàn bộ ID của mọi thành viên về dạng chuỗi (String) để tránh lệch kiểu dữ liệu
             members.forEach(m => {
-                // Ép kiểu chuẩn xác spouseIds từ chuỗi hoặc dữ liệu thô sang mảng (Array)
+                m.id = String(m.id).trim();
+                if (m.fatherId) m.fatherId = String(m.fatherId).trim();
+                if (m.motherId) m.motherId = String(m.motherId).trim();
+
                 if (typeof m.spouseIds === 'string') {
                     try {
                         m.spouseIds = JSON.parse(m.spouseIds);
@@ -409,13 +413,32 @@
                 if (!Array.isArray(m.spouseIds)) {
                     m.spouseIds = m.spouseIds ? [m.spouseIds] : [];
                 }
-                // Chuẩn hóa tất cả các phần tử bên trong mảng spouseIds về dạng chuỗi/số đồng nhất
+                
+                // Ép mọi phần tử spouseId về chuỗi
                 m.spouseIds = m.spouseIds.map(id => String(id).trim()).filter(Boolean);
 
                 if (m.spouseId && !m.spouseIds.includes(String(m.spouseId).trim())) {
                     m.spouseIds.push(String(m.spouseId).trim());
                 }
             });
+
+            // Đồng bộ chéo hai chiều quan hệ vợ/chồng bằng so sánh chuỗi
+            members.forEach(m => {
+                if (Array.isArray(m.spouseIds)) {
+                    m.spouseIds.forEach(spouseId => {
+                        const cleanSpouseId = String(spouseId).trim();
+                        const sp = members.find(s => s.id === cleanSpouseId);
+                        if (sp) {
+                            if (!Array.isArray(sp.spouseIds)) sp.spouseIds = [];
+                            sp.spouseIds = sp.spouseIds.map(id => String(id).trim()).filter(Boolean);
+                            if (!sp.spouseIds.includes(m.id)) {
+                                sp.spouseIds.push(m.id);
+                            }
+                        }
+                    });
+                }
+            });
+        }
 
             // Đồng bộ chéo quan hệ vợ/chồng hai chiều
             members.forEach(m => {
