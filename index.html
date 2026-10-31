@@ -371,29 +371,38 @@
                 });
         });
 
-        function migrateSpouseData() {
+       function migrateSpouseData() {
             members.forEach(m => {
                 m.id = String(m.id).trim();
                 if (m.fatherId) m.fatherId = String(m.fatherId).trim();
                 if (m.motherId) m.motherId = String(m.motherId).trim();
 
-                if (typeof m.spouseIds === 'string') {
-                    try {
-                        m.spouseIds = JSON.parse(m.spouseIds);
-                    } catch (e) {
-                        m.spouseIds = m.spouseIds ? [m.spouseIds] : [];
+                // Làm sạch chuỗi spouseIds kiểu Google Sheets (loại bỏ [, ], ', ")
+                let rawSpouse = m.spouseIds;
+                let parsedSpouses = [];
+
+                if (rawSpouse) {
+                    if (Array.isArray(rawSpouse)) {
+                        parsedSpouses = rawSpouse;
+                    } else if (typeof rawSpouse === 'string') {
+                        let cleaned = rawSpouse.trim();
+                        // Nếu là dạng mảng Python/Sheets như ['123'] hoặc ["123"]
+                        if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+                            cleaned = cleaned.substring(1, cleaned.length - 1);
+                        }
+                        // Tách các phần tử nếu có nhiều vợ/chồng
+                        parsedSpouses = cleaned.split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
                     }
                 }
-                if (!Array.isArray(m.spouseIds)) {
-                    m.spouseIds = m.spouseIds ? [m.spouseIds] : [];
-                }
-                m.spouseIds = m.spouseIds.map(id => String(id).trim()).filter(Boolean);
+
+                m.spouseIds = parsedSpouses.map(id => String(id).trim()).filter(Boolean);
 
                 if (m.spouseId && !m.spouseIds.includes(String(m.spouseId).trim())) {
                     m.spouseIds.push(String(m.spouseId).trim());
                 }
             });
 
+            // Đồng bộ chéo hai chiều quan hệ vợ/chồng
             members.forEach(m => {
                 if (Array.isArray(m.spouseIds)) {
                     m.spouseIds.forEach(spouseId => {
@@ -401,7 +410,6 @@
                         const sp = members.find(s => s.id === cleanSpouseId);
                         if (sp) {
                             if (!Array.isArray(sp.spouseIds)) sp.spouseIds = [];
-                            sp.spouseIds = sp.spouseIds.map(id => String(id).trim()).filter(Boolean);
                             if (!sp.spouseIds.includes(m.id)) {
                                 sp.spouseIds.push(m.id);
                             }
