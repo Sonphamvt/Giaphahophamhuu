@@ -785,7 +785,7 @@
             });
             svg.call(zoomHandler);
 
-            const treeLayout = d3.tree().nodeSize([300, 150]);
+            const treeLayout = d3.tree().nodeSize([340, 160]);
             treeLayout(root);
 
             g.selectAll(".link")
@@ -1038,9 +1038,10 @@
                                     }
                                 });
                         }
-
-                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -60, true);
-                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 60, false);
+                        // Sửa vị trí xPos của bố đẻ và mẹ đẻ từ -60 / 60 thành -70 / 70 hoặc tách rộng hơn tùy ý:
+                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -75, true);
+                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 75, false);
+                        
                     }
 
                     spouseIndex++;
