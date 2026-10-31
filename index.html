@@ -1514,6 +1514,20 @@
             renderTree();
             renderTable();
             renderAnniversaries();
+
+            // GỬI DỮ LIỆU LÊN GOOGLE SHEETS QUA WEB APP
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(memberData)
+            })
+            .then(() => {
+                console.log("Đã đồng bộ dữ liệu lên Google Sheets thành công!");
+            })
+            .catch(err => {
+                console.error("Lỗi đồng bộ Google Sheets:", err);
+            });
         }
 
         function deleteMember(id) {
