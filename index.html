@@ -373,20 +373,24 @@
 
     <script>
        // Thay thế đoạn load dữ liệu cũ bằng đoạn mã tự động gọi từ Google Sheets của ông:
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbypbNCCQQJlPLF1nUS8SwFmRPCxLrPsre6hKvSvEYvaG0uqhRhDsijlt8EHphA7GACQ/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxC9PW-K-8XNGFOSql_xj_pcU2Bxl2GktLQKTjA5AjUpMxDTLU3N5HAJnsX5nPS-ZYW/exec";
 
 // Tải dữ liệu trực tiếp từ Google Sheets khi mở trang web
 fetch(WEB_APP_URL)
   .then(response => response.json())
   .then(data => {
     console.log("Đã tải thành công dữ liệu từ Google Sheets:", data);
-    // Gọi hàm vẽ sơ đồ gia phả của ông ở đây (ví dụ: renderTree(data) hoặc tên hàm tương ứng trong code của ông)
-    initialMembers = data; 
-    initFamilyTree(); // Thay tên hàm khởi tạo sơ đồ của ông vào đây nếu khác tên
+    members = data; // Gán thẳng vào biến members của trang
+    migrateSpouseData();
+    recalculateAllGenerations();
+    updateGenerationFilterOptions();
+    renderTree(); // Gọi hàm vẽ sơ đồ gia phả
+    renderTable();
+    renderAnniversaries();
   })
   .catch(error => {
     console.error("Lỗi khi tải dữ liệu từ Google Sheets:", error);
-    alert("Không thể tải dữ liệu gia phả từ Google Sheets. Vui lòng kiểm tra lại kết nối!");
+    alert("Không thể tải dữ liệu gia phả từ Google Sheets. Vول lòng kiểm tra lại kết nối!");
   });
 
         let members = [];
