@@ -372,37 +372,28 @@
     </div>
 
     <script>
-       // Thay thế đoạn load dữ liệu cũ bằng đoạn mã tự động gọi từ Google Sheets của ông:
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxC9PW-K-8XNGFOSql_xj_pcU2Bxl2GktLQKTjA5AjUpMxDTLU3N5HAJnsX5nPS-ZYW/exec";
+     let members = [];
 
-// Tải dữ liệu trực tiếp từ Google Sheets khi mở trang web
-fetch(WEB_APP_URL)
-  .then(response => response.json())
-  .then(data => {
-    console.log("Đã tải thành công dữ liệu từ Google Sheets:", data);
-    members = data; // Gán thẳng vào biến members của trang
-    migrateSpouseData();
-    recalculateAllGenerations();
-    updateGenerationFilterOptions();
-    renderTree(); // Gọi hàm vẽ sơ đồ gia phả
-    renderTable();
-    renderAnniversaries();
-  })
-  .catch(error => {
-    console.error("Lỗi khi tải dữ liệu từ Google Sheets:", error);
-    alert("Không thể tải dữ liệu gia phả từ Google Sheets. Vول lòng kiểm tra lại kết nối!");
-  });
-
-        let members = [];
+        // Tải dữ liệu trực tiếp từ Google Sheets khi trang web vừa khởi động
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxC9PW-K-8XNGFOSql_xj_pcU2Bxl2GktLQKTjA5AjUpMxDTLU3N5HAJnsX5nPS-ZYW/exec";
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadMembers();
-            migrateSpouseData();
-            recalculateAllGenerations();
-            updateGenerationFilterOptions();
-            renderTree();
-            renderTable();
-            renderAnniversaries();
+            fetch(WEB_APP_URL)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Đã tải thành công dữ liệu từ Google Sheets:", data);
+                    members = data; // Gán dữ liệu vào biến members
+                    migrateSpouseData();
+                    recalculateAllGenerations();
+                    updateGenerationFilterOptions();
+                    renderTree(); // Vẽ sơ đồ gia phả
+                    renderTable();
+                    renderAnniversaries();
+                })
+                .catch(error => {
+                    console.error("Lỗi khi tải dữ liệu từ Google Sheets:", error);
+                    alert("Không thể tải dữ liệu gia phả từ Google Sheets. Vui lòng kiểm tra lại kết nối!");
+                });
         });
 
         function migrateSpouseData() {
