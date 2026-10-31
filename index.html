@@ -372,7 +372,7 @@
     </div>
 
     <script>
-    let members = [];
+        let members = [];
 
         // Tải dữ liệu trực tiếp từ Google Sheets khi trang web vừa khởi động
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwOZLvFk9Vp02sQvZPdTzAM9GaxKcDufjB62R5R9V-FzM8Ld5sd3mJvfSdpo_epSEf0/exec";
@@ -396,7 +396,7 @@
                 });
         });
 
-       function migrateSpouseData() {
+        function migrateSpouseData() {
             // Chuẩn hóa toàn bộ ID của mọi thành viên về dạng chuỗi (String) để tránh lệch kiểu dữ liệu
             members.forEach(m => {
                 m.id = String(m.id).trim();
@@ -439,50 +439,6 @@
                 }
             });
         }
-
-            // Đồng bộ chéo quan hệ vợ/chồng hai chiều
-            members.forEach(m => {
-                if (Array.isArray(m.spouseIds)) {
-                    m.spouseIds.forEach(spouseId => {
-                        const sp = members.find(s => String(s.id).trim() === spouseId);
-                        if (sp) {
-                            if (typeof sp.spouseIds === 'string') {
-                                try { sp.spouseIds = JSON.parse(sp.spouseIds); } catch(e) { sp.spouseIds = [sp.spouseIds]; }
-                            }
-                            if (!Array.isArray(sp.spouseIds)) sp.spouseIds = sp.spouseIds ? [sp.spouseIds] : [];
-                            sp.spouseIds = sp.spouseIds.map(id => String(id).trim()).filter(Boolean);
-
-                            if (!sp.spouseIds.includes(String(m.id).trim())) {
-                                sp.spouseIds.push(String(m.id).trim());
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-    members.forEach(m => {
-        if (Array.isArray(m.spouseIds)) {
-            m.spouseIds.forEach(spouseId => {
-                const sp = members.find(s => s.id === spouseId);
-                if (sp) {
-                    if (typeof sp.spouseIds === 'string') {
-                        try { sp.spouseIds = JSON.parse(sp.spouseIds); } catch(e) { sp.spouseIds = []; }
-                    }
-                    if (!Array.isArray(sp.spouseIds)) sp.spouseIds = [];
-                    if (!sp.spouseIds.includes(m.id)) {
-                        sp.spouseIds.push(m.id);
-                    }
-                }
-            });
-        }
-    });
-}
-
-        function loadMembers() {
-    // Luôn tải trực tiếp dữ liệu từ mã HTML mỗi khi mở web
-    members = JSON.parse(JSON.stringify(initialMembers));
-}
 
         function saveMembers() {
             localStorage.setItem('pham_huu_genealogy_v37', JSON.stringify(members));
@@ -527,8 +483,6 @@
 
         function resetData() {
             if (confirm("Khôi phục về dữ liệu họ Phạm Hữu ban đầu?")) {
-                members = JSON.parse(JSON.stringify(initialMembers));
-                saveMembers();
                 location.reload();
             }
         }
@@ -640,7 +594,7 @@
 
         function parseYear(yearStr) {
             if (!yearStr) return 9999;
-            const match = yearStr.match(/\d{4}/);
+            const match = String(yearStr).match(/\d{4}/);
             return match ? parseInt(match[0]) : 9999;
         }
 
@@ -654,7 +608,7 @@
             6: { m: 7, d: 15 },   // Mùng 1 Thg 6 Âm = 15/07 Dương
             7: { m: 8, d: 13 },   // Mùng 1 Thg 7 Âm = 13/08 Dương
             8: { m: 9, d: 12 },   // Mùng 1 Thg 8 Âm = 12/09 Dương
-            9: { m: 10, d: 10 },  // Mùng 1 Thg 9 Âm = 10/10 Dương (25/09 Âm Lịch = 03/11 Dương Lịch)
+            9: { m: 10, d: 10 },  // Mùng 1 Thg 9 Âm = 10/10 Dương
             10: { m: 11, d: 9 },  // Mùng 1 Thg 10 Âm = 09/11 Dương
             11: { m: 12, d: 9 },  // Mùng 1 Thg 11 Âm = 09/12 Dương
             12: { m: 2027, d: 1, m_idx: 1, day_idx: 8 }
@@ -673,7 +627,7 @@
         /* --- HÀM TÍNH KHOẢNG CÁCH NGÀY CHUẨN XÁC ĐẾN TRƯỚC 1 TUẦN --- */
         function checkUpcomingAnniversary(deathDateStr) {
             if (!deathDateStr) return { isUpcoming: false };
-            const match = deathDateStr.match(/(\d{1,2})\/(\d{1,2})/);
+            const match = String(deathDateStr).match(/(\d{1,2})\/(\d{1,2})/);
             if (match) {
                 const lunarDay = parseInt(match[1]);
                 const lunarMonth = parseInt(match[2]);
@@ -697,7 +651,7 @@
 
             if (member.status === 'Đã mất') {
                 if (!member.deathDate) return { isUpcoming: false };
-                const match = member.deathDate.match(/(\d{1,2})\/(\d{1,2})/);
+                const match = String(member.deathDate).match(/(\d{1,2})\/(\d{1,2})/);
                 if (match) {
                     const lunarDay = parseInt(match[1]);
                     const lunarMonth = parseInt(match[2]);
@@ -711,7 +665,7 @@
                 }
             } else {
                 if (!member.birthYear) return { isUpcoming: false };
-                const match = member.birthYear.match(/(\d{1,2})\/(\d{1,2})/);
+                const match = String(member.birthYear).match(/(\d{1,2})\/(\d{1,2})/);
                 if (match) {
                     const birthDay = parseInt(match[1]);
                     const birthMonth = parseInt(match[2]);
@@ -791,9 +745,6 @@
                 addedNodeIds.add(m.id);
 
                 let children = [];
-                // NẾU CHỌN "Chỉ Nội Tộc (Huyết thống)", CHỈ LẤY CON KHI:
-                // 1. Thành viên hiện tại là Nam (con trai trong họ sinh ra tiếp tục nối dõi), HOẶC
-                // 2. Chế độ xem là "all" (Cả Nội Tộc & Ngoại Tộc) thì mới cho phép hiện con của con gái.
                 const isCurrentMemberMale = (m.gender === 'Nam' || m.generation === 1);
                 
                 if (viewMode === 'all' || isCurrentMemberMale) {
@@ -924,7 +875,7 @@
                     }
                 });
 
-            // VẼ VỢ/CHỒNG NỐI NGANG VÀ THẺ BỐ/MẸ ĐẺ NGOẠI TỘC (CHỈ HIỂN THỊ KHI CHỌN CHẾ ĐỘ "CẢ NỘI TỘC & NGOẠI TỘC")
+            // VẼ VỢ/CHỒNG NỐI NGANG VÀ THẺ BỐ/MẸ ĐẺ NGOẠI TỘC
             nodes.each(function(d) {
                 const currentId = d.data.id;
                 const currentMember = members.find(m => m.id === currentId);
@@ -1060,12 +1011,12 @@
                                 .attr("stroke-width", checkUp.isUpcoming ? "2.5" : "1.5")
                                 .attr("class", checkUp.isUpcoming ? "glow-upcoming" : "");
 
-                         
-				if (isDeceased) {
-    				card.append("path")
-        				.attr("d", "M -55 -12 A 6 6 0 0 1 -49 -18 L -30 -18 L -55 5 Z") // <-- Bo tròn chuẩn với kích thước thẻ thông gia (rx="6")
-        				.attr("fill", "#1c1917");
-				}
+                            if (isDeceased) {
+                                card.append("path")
+                                    .attr("d", "M -55 -12 A 6 6 0 0 1 -49 -18 L -30 -18 L -55 5 Z")
+                                    .attr("fill", "#1c1917");
+                            }
+
                             card.append("text")
                                 .attr("x", 0)
                                 .attr("y", -4)
