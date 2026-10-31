@@ -396,29 +396,41 @@
                 });
         });
 
-        function migrateSpouseData() {
-            members.forEach(m => {
-                if (!m.spouseIds) {
-                    m.spouseIds = [];
-                    if (m.spouseId) {
-                        m.spouseIds.push(m.spouseId);
+       function migrateSpouseData() {
+    members.forEach(m => {
+        // Đảm bảo spouseIds luôn là mảng chuẩn, kể cả khi Google Sheets trả về dạng chuỗi JSON
+        if (typeof m.spouseIds === 'string') {
+            try {
+                m.spouseIds = JSON.parse(m.spouseIds);
+            } catch (e) {
+                m.spouseIds = [];
+            }
+        }
+        if (!Array.isArray(m.spouseIds)) {
+            m.spouseIds = [];
+            if (m.spouseId) {
+                m.spouseIds.push(m.spouseId);
+            }
+        }
+    });
+
+    members.forEach(m => {
+        if (Array.isArray(m.spouseIds)) {
+            m.spouseIds.forEach(spouseId => {
+                const sp = members.find(s => s.id === spouseId);
+                if (sp) {
+                    if (typeof sp.spouseIds === 'string') {
+                        try { sp.spouseIds = JSON.parse(sp.spouseIds); } catch(e) { sp.spouseIds = []; }
+                    }
+                    if (!Array.isArray(sp.spouseIds)) sp.spouseIds = [];
+                    if (!sp.spouseIds.includes(m.id)) {
+                        sp.spouseIds.push(m.id);
                     }
                 }
             });
-            members.forEach(m => {
-                if (m.spouseIds) {
-                    m.spouseIds.forEach(spouseId => {
-                        const sp = members.find(s => s.id === spouseId);
-                        if (sp) {
-                            if (!sp.spouseIds) sp.spouseIds = [];
-                            if (!sp.spouseIds.includes(m.id)) {
-                                sp.spouseIds.push(m.id);
-                            }
-                        }
-                    });
-                }
-            });
         }
+    });
+}
 
         function loadMembers() {
     // Luôn tải trực tiếp dữ liệu từ mã HTML mỗi khi mở web
