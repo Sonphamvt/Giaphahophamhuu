@@ -852,9 +852,8 @@
             });
             svg.call(zoomHandler);
 
-            // NÂNG CẤP: Tăng kích thước nodeSize ngang từ 240 -> 280 và dọc từ 210 -> 230
-            // Đảm bảo thẻ Vợ/Chồng (Dâu/Rể) không bao giờ bị đè hoặc che bởi thẻ thành viên khác!
-            const treeLayout = d3.tree().nodeSize([280, 230]);
+            // Nới rộng khoảng cách ngang (310px) và dọc (230px) để các thẻ dâu rể & thông gia không bị che
+            const treeLayout = d3.tree().nodeSize([310, 230]);
             treeLayout(root);
 
             g.selectAll(".link")
@@ -999,10 +998,10 @@
                     if (!spouse) return;
 
                     const nodeGroup = d3.select(this);
-                    // Cân chỉnh xOffset phù hợp vừa khít không bị đè
-                    const xOffsetStart = 80 + (spouseIndex * 170);
-                    const xOffsetEnd = 95 + (spouseIndex * 170);
-                    const groupTranslate = 170 + (spouseIndex * 170);
+                    // Giãn khoảng cách đặt thẻ vợ chồng thành 200px
+                    const xOffsetStart = 80 + (spouseIndex * 200);
+                    const xOffsetEnd = 95 + (spouseIndex * 200);
+                    const groupTranslate = 200 + (spouseIndex * 200);
 
                     nodeGroup.append("line")
                         .attr("x1", xOffsetStart)
@@ -1070,13 +1069,14 @@
                         });
 
                     if (viewMode === 'all' && (spouse.inlawFather || spouse.inlawMother)) {
-                        const inlawGroup = spouseGroup.append("g").attr("transform", "translate(0, -65)");
+                        // Đẩy cao vị trí bố mẹ thông gia lên -70 để tuyệt đối không bị che
+                        const inlawGroup = spouseGroup.append("g").attr("transform", "translate(0, -70)");
 
                         spouseGroup.append("line")
                             .attr("x1", 0)
                             .attr("y1", -25)
                             .attr("x2", 0)
-                            .attr("y2", -40)
+                            .attr("y2", -45)
                             .attr("stroke", "#d4af37")
                             .attr("stroke-dasharray", "3,3")
                             .attr("stroke-width", "1.5");
@@ -1092,14 +1092,14 @@
                             
                             if (isDeceased) {
                                 card.append("clipPath").attr("id", `clip-inlaw-${spouse.id}-${isFather?'f':'m'}`)
-                                    .append("rect").attr("width", 110).attr("height", 36).attr("x", -55).attr("y", -18).attr("rx", 6);
+                                    .append("rect").attr("width", 100).attr("height", 34).attr("x", -50).attr("y", -17).attr("rx", 6);
                             }
 
                             card.append("rect")
-                                .attr("width", 110)
-                                .attr("height", 36)
-                                .attr("x", -55)
-                                .attr("y", -18)
+                                .attr("width", 100)
+                                .attr("height", 34)
+                                .attr("x", -50)
+                                .attr("y", -17)
                                 .attr("rx", 6)
                                 .attr("fill", fillColor)
                                 .attr("stroke", borderColor)
@@ -1108,13 +1108,13 @@
 
                             if (isDeceased) {
                                 card.append("path")
-                                    .attr("d", "M -55 -12 A 6 6 0 0 1 -49 -18 L -35 -18 L -55 2 Z")
+                                    .attr("d", "M -50 -11 A 5 5 0 0 1 -45 -17 L -32 -17 L -50 2 Z")
                                     .attr("fill", "#1c1917");
                             }
 
                             card.append("text")
                                 .attr("x", 0)
-                                .attr("y", -4)
+                                .attr("y", -3)
                                 .attr("text-anchor", "middle")
                                 .attr("class", "font-bold text-[10px]")
                                 .attr("fill", "#78350f")
@@ -1137,8 +1137,9 @@
                                     }
                                 });
                         }
-                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -75, true);
-                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 75, false);
+                        // Thu nhỏ độ rộng thẻ thông gia và căn khoảng cách gọn gàng (-60 và +60)
+                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -60, true);
+                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 60, false);
                     }
 
                     spouseIndex++;
@@ -1171,7 +1172,7 @@
             let allowedDescendants = null;
             if (ancestorFilter) {
                 allowedDescendants = getAllDescendantIds(ancestorFilter);
-                allowedDescendants.add(ancestorFilter); // Bao gồm cả cụ gốc được chọn
+                allowedDescendants.add(ancestorFilter);
             }
 
             const filtered = members.filter(m => {
