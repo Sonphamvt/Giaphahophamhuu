@@ -813,7 +813,7 @@
             });
             svg.call(zoomHandler);
 
-            const treeLayout = d3.tree().nodeSize([340, 160]);
+            const treeLayout = d3.tree().nodeSize([240, 210]);
             treeLayout(root);
 
             g.selectAll(".link")
@@ -959,9 +959,9 @@
                     if (!spouse) return;
 
                     const nodeGroup = d3.select(this);
-                    const xOffsetStart = 80 + (spouseIndex * 190);
-                    const xOffsetEnd = 100 + (spouseIndex * 190);
-                    const groupTranslate = 180 + (spouseIndex * 190);
+                    const xOffsetStart = 80 + (spouseIndex * 170);
+                    const xOffsetEnd = 95 + (spouseIndex * 170);
+                    const groupTranslate = 170 + (spouseIndex * 170);
 
                     nodeGroup.append("line")
                         .attr("x1", xOffsetStart)
