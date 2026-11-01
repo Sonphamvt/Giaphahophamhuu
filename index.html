@@ -145,15 +145,19 @@
         <!-- VIEW 2: DANH SÁCH THÀNH VIÊN -->
         <section id="view-list" class="hidden space-y-4">
             <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex flex-wrap gap-3 justify-between items-center">
-                <div class="relative flex-grow max-w-md">
+                <div class="relative flex-grow max-w-sm">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
                     <input type="text" id="search-input" oninput="renderTable()" placeholder="Tìm theo tên, quê quán..." class="w-full pl-9 pr-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:border-crimson">
                 </div>
-                <div class="flex space-x-2">
-                    <select id="filter-generation" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson">
+                <div class="flex flex-wrap gap-2">
+                    <!-- Ô LỌC NHÁNH CON CHÁU -->
+                    <select id="filter-ancestor" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
+                        <option value="">-- Tất cả các nhánh (Con cháu của...) --</option>
+                    </select>
+                    <select id="filter-generation" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
                         <option value="">-- Tất cả thế hệ --</option>
                     </select>
-                    <select id="filter-status" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson">
+                    <select id="filter-status" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
                         <option value="">-- Trạng thái --</option>
                         <option value="living">Còn sống</option>
                         <option value="deceased">Đã mất</option>
@@ -389,6 +393,7 @@
                     migrateSpouseData();
                     recalculateAllGenerations();
                     updateGenerationFilterOptions();
+                    updateAncestorFilterOptions();
                     renderTree();
                     renderTable();
                     renderAnniversaries();
@@ -471,6 +476,7 @@
                             recalculateAllGenerations();
                             saveMembers();
                             updateGenerationFilterOptions();
+                            updateAncestorFilterOptions();
                             renderTree();
                             renderTable();
                             renderAnniversaries();
@@ -561,6 +567,7 @@
 
         function updateGenerationFilterOptions() {
             const filterSelect = document.getElementById('filter-generation');
+            if (!filterSelect) return;
             const currentValue = filterSelect.value;
             const generations = [...new Set(members.map(m => m.generation || 1))].sort((a, b) => a - b);
 
@@ -569,6 +576,39 @@
                 filterSelect.innerHTML += `<option value="${gen}">Đời F${gen}</option>`;
             });
             filterSelect.value = currentValue;
+        }
+
+        function updateAncestorFilterOptions() {
+            const ancestorSelect = document.getElementById('filter-ancestor');
+            if (!ancestorSelect) return;
+            const currentValue = ancestorSelect.value;
+
+            let sortedMembers = [...members].sort((a, b) => (a.generation - b.generation) || (a.orderIndex - b.orderIndex));
+
+            ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>';
+            sortedMembers.forEach(m => {
+                const genLabel = m.generation ? `(Đời F${m.generation})` : '';
+                ancestorSelect.innerHTML += `<option value="${m.id}">Con cháu của: ${m.name} ${genLabel}</option>`;
+            });
+            ancestorSelect.value = currentValue;
+        }
+
+        function getAllDescendantIds(ancestorId) {
+            let descendantSet = new Set();
+            let queue = [ancestorId];
+
+            while (queue.length > 0) {
+                let currentId = queue.shift();
+                let children = members.filter(m => m.fatherId === currentId || m.motherId === currentId);
+                
+                children.forEach(c => {
+                    if (!descendantSet.has(c.id)) {
+                        descendantSet.add(c.id);
+                        queue.push(c.id);
+                    }
+                });
+            }
+            return descendantSet;
         }
 
         function switchTab(tab) {
@@ -588,6 +628,7 @@
                 document.getElementById('view-list').classList.remove('hidden');
                 document.getElementById('tab-list').className = "px-3 py-1.5 rounded-md text-sm font-medium bg-amber-gold text-crimson font-bold shadow";
                 updateGenerationFilterOptions();
+                updateAncestorFilterOptions();
                 renderTable();
             } else if (tab === 'anniversaries') {
                 document.getElementById('view-anniversaries').classList.remove('hidden');
@@ -707,8 +748,6 @@
         }
 
         let zoomHandler;
-        
-        // Quản lý các nhánh bị thu gọn (Collapsed Nodes)
         let collapsedNodes = new Set();
         let isInitialLoad = true;
 
@@ -716,9 +755,7 @@
             const container = document.getElementById('tree-container');
             const svg = d3.select("#tree-svg");
 
-            // LƯU LẠI VỊ TRÍ MÀN HÌNH ĐANG NHÌN (TRANSFORM HIỆN TẠI)
             let currentTransform = d3.zoomTransform(svg.node());
-
             svg.selectAll("*").remove();
 
             const width = container.clientWidth;
@@ -790,7 +827,6 @@
                 hierarchyData = buildHierarchy(rootMembers[0].id);
             }
 
-            // Ở lần đầu tiên tải trang, tự động thu gọn tất cả các node từ đời F5 trở xuống
             if (isInitialLoad) {
                 function initCollapse(d) {
                     if (d.children && d.children.length > 0) {
@@ -804,9 +840,8 @@
                 isInitialLoad = false;
             }
 
-            // Sử dụng d3.hierarchy có hỗ trợ cả children và _children
             const root = d3.hierarchy(hierarchyData, d => {
-                if (collapsedNodes.has(d.id)) return null; // Ẩn con nếu bị thu gọn
+                if (collapsedNodes.has(d.id)) return null;
                 return d.children;
             });
 
@@ -905,20 +940,19 @@
                     }
                 });
 
-            // NÚT BẤM THU GỌN / MỞ RỘNG NHÁNH CON CHÁU [+] [-]
             const toggleNodes = nodes.filter(d => d.data.children && d.data.children.length > 0);
             const toggleGroup = toggleNodes.append("g")
                 .attr("class", "toggle-btn")
                 .attr("transform", "translate(0, 25)")
                 .style("cursor", "pointer")
                 .on("click", (event, d) => {
-                    event.stopPropagation(); // Không bị mở bảng chi tiết khi bấm nút cộng trừ
+                    event.stopPropagation();
                     if (collapsedNodes.has(d.data.id)) {
                         collapsedNodes.delete(d.data.id);
                     } else {
                         collapsedNodes.add(d.data.id);
                     }
-                    renderTree(); // Vẽ lại sơ đồ ngay lập tức
+                    renderTree();
                 });
 
             toggleGroup.append("circle")
@@ -1108,7 +1142,6 @@
                 });
             });
 
-            // KHÔI PHỤC LẠI VỊ TRÍ ZOOM/PAN SAU KHI VẼ XONG ĐỂ KHÔNG BỊ ĐẨY MÀN HÌNH VỀ GỐC
             if (currentTransform && currentTransform.k !== 1 && currentTransform.x !== 0) {
                 svg.call(zoomHandler.transform, currentTransform);
             } else {
@@ -1122,18 +1155,29 @@
 
         function renderTable() {
             updateGenerationFilterOptions();
+            updateAncestorFilterOptions();
+
             const tbody = document.getElementById('member-table-body');
             const search = document.getElementById('search-input').value.toLowerCase();
             const genFilter = document.getElementById('filter-generation').value;
             const statusFilter = document.getElementById('filter-status').value;
+            const ancestorFilter = document.getElementById('filter-ancestor').value;
 
             tbody.innerHTML = '';
+
+            let allowedDescendants = null;
+            if (ancestorFilter) {
+                allowedDescendants = getAllDescendantIds(ancestorFilter);
+                allowedDescendants.add(ancestorFilter); // Bao gồm cả cụ gốc được chọn
+            }
 
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
                 const matchStatus = !statusFilter || (statusFilter === 'living' ? m.status === 'Còn sống' : m.status === 'Đã mất');
-                return matchSearch && matchGen && matchStatus;
+                const matchAncestor = !ancestorFilter || (allowedDescendants && allowedDescendants.has(m.id));
+
+                return matchSearch && matchGen && matchStatus && matchAncestor;
             });
 
             filtered.sort((a, b) => {
@@ -1589,11 +1633,11 @@
             saveMembers();
             closeModal();
             updateGenerationFilterOptions();
+            updateAncestorFilterOptions();
             renderTree();
             renderTable();
             renderAnniversaries();
 
-            // GỬI DỮ LIỆU LÊN GOOGLE SHEETS QUA WEB APP
             fetch(WEB_APP_URL, {
                 method: "POST",
                 mode: "no-cors",
@@ -1628,6 +1672,7 @@
                 recalculateAllGenerations();
                 saveMembers();
                 updateGenerationFilterOptions();
+                updateAncestorFilterOptions();
                 renderTree();
                 renderTable();
                 renderAnniversaries();
