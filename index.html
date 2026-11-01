@@ -715,6 +715,10 @@
         function renderTree() {
             const container = document.getElementById('tree-container');
             const svg = d3.select("#tree-svg");
+
+            // LƯU LẠI VỊ TRÍ MÀN HÌNH ĐANG NHÌN (TRANSFORM HIỆN TẠI)
+            let currentTransform = d3.zoomTransform(svg.node());
+
             svg.selectAll("*").remove();
 
             const width = container.clientWidth;
@@ -1104,7 +1108,12 @@
                 });
             });
 
-            svg.call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85));
+            // KHÔI PHỤC LẠI VỊ TRÍ ZOOM/PAN SAU KHI VẼ XONG ĐỂ KHÔNG BỊ ĐẨY MÀN HÌNH VỀ GỐC
+            if (currentTransform && currentTransform.k !== 1 && currentTransform.x !== 0) {
+                svg.call(zoomHandler.transform, currentTransform);
+            } else {
+                svg.call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85));
+            }
         }
 
         function zoomIn() { d3.select("#tree-svg").transition().call(zoomHandler.scaleBy, 1.2); }
