@@ -751,32 +751,29 @@
         let collapsedNodes = new Set();
         let isInitialLoad = true;
 
-        // HÀM TÍNH TOÁN BỀ RỘNG VẬT LÝ VÀ PHẠM VI BAO PHỦ BÊN TRÁI / BÊN PHẢI CỦA MỖI NÚT THÀNH VIÊN
+        // TÍNH TOÁN BIÊN GIỚI VẬT LÝ CHÍNH XÁC (TÍNH TỪ TÂM NÚT QUA BÊN TRÁI VÀ BÊN PHẢI)
         function getNodeBoundingBox(nodeData, viewMode) {
-            // Thẻ chính rộng 160px (-80 đến +80 tính từ tâm)
-            let leftEdge = -80;
-            let rightEdge = 80;
+            let leftEdge = -80;  // Mép trái thẻ chính
+            let rightEdge = 80;  // Mép phải thẻ chính
 
             const spouseCount = (nodeData.spouseIds || []).length;
             if (spouseCount > 0) {
-                // Thẻ Vợ/Chồng cuối cùng mở rộng về bên phải
-                const lastSpouseOffset = 170 + (spouseCount - 1) * 170;
-                rightEdge = lastSpouseOffset + 80;
+                // Mỗi vợ/chồng dời sang phải 170px và rộng 80px mỗi bên từ tâm của họ
+                rightEdge = 170 + ((spouseCount - 1) * 170) + 80;
             }
 
-            // Nếu ở chế độ Ngoại Tộc, tính thêm phạm vi nhô ra của thẻ Bố Mẹ Thông Gia
             if (viewMode === 'all' && spouseCount > 0) {
                 const spouseList = (nodeData.spouseIds || []).map(id => members.find(m => m.id === id)).filter(Boolean);
                 spouseList.forEach((sp, idx) => {
                     if (sp.inlawFather || sp.inlawMother) {
-                        const spouseCenter = 170 + (idx * 170);
-                        if (sp.inlawFather) leftEdge = Math.min(leftEdge, spouseCenter - 110);
-                        if (sp.inlawMother) rightEdge = Math.max(rightEdge, spouseCenter + 110);
+                        const spouseCenterX = 170 + (idx * 170);
+                        if (sp.inlawFather) leftEdge = Math.min(leftEdge, spouseCenterX - 110);
+                        if (sp.inlawMother) rightEdge = Math.max(rightEdge, spouseCenterX + 110);
                     }
                 });
             }
 
-            return { left: leftEdge, right: rightEdge, totalWidth: rightEdge - leftEdge };
+            return { left: leftEdge, right: rightEdge };
         }
 
         function renderTree() {
@@ -880,58 +877,46 @@
             });
             svg.call(zoomHandler);
 
-            // THUẬT TOÁN ĐẾM TỔNG SỐ THẺ VÀ ĐIỀU CHỈNH KHOẢNG CÁCH NGHỆ THUẬT TỰ ĐỘNG CÂN BẰNG HÀNG NGANG
-            const BASE_UNIT = 160; // Bề rộng cơ sở 1 thẻ
-            const MIN_PADDING = 30; // Khoảng hở tối thiểu giữa 2 thẻ cạnh nhau
-
-            // 1. Cấu hình Tree Layout cơ bản
-const treeLayout = d3.tree()
-    .nodeSize([180, 230]);
-
-treeLayout(root);
-
-// 2. BƯỚC SỬA LỖI CỐT LÕI: Điều chỉnh lại tọa độ X theo từng thế hệ (Depth)
-// Gom nhóm tất cả các nút theo từng hàng ngang (depth/thế hệ)
-const nodesByDepth = {};
-root.descendants().forEach(d => {
-    if (!nodesByDepth[d.depth]) nodesByDepth[d.depth] = [];
-    nodesByDepth[d.depth].push(d);
-});
-
-// Duyệt từng hàng ngang từ trái sang phải để dịch chuyển tọa độ X không bị đè
-Object.keys(nodesByDepth).forEach(depth => {
-    const rowNodes = nodesByDepth[depth];
-    // Sắp xếp các nút trên cùng hàng theo tọa độ X ban đầu của D3
-    rowNodes.sort((a, b) => a.x - b.x);
-
-    for (let i = 0; i < rowNodes.length - 1; i++) {
-        const currNode = rowNodes[i];
-        const nextNode = rowNodes[i + 1];
-
-        // Lấy khoảng bao phủ thực tế bên phải của nút hiện tại (bao gồm thẻ vợ/chồng)
-        const boxCurr = getNodeBoundingBox(currNode.data, viewMode);
-        const boxNext = getNodeBoundingBox(nextNode.data, viewMode);
-
-        // Mép phải thực tế của currNode = currNode.x + boxCurr.right
-        // Mép trái thực tế của nextNode = nextNode.x + boxNext.left
-        const currentRightEdge = currNode.x + boxCurr.right;
-        const nextLeftEdge = nextNode.x + boxNext.left;
-        
-        const minGap = 40; // Khoảng cách an toàn giữa 2 nhóm thẻ (40px)
-
-        // Nếu mép trái người sau bị đè hoặc quá gần mép phải người trước
-        if (nextLeftEdge < currentRightEdge + minGap) {
-            const shiftAmount = (currentRightEdge + minGap) - nextLeftEdge;
-            
-            // Dịch chuyển tất cả các nút phía sau sang bên phải một khoảng shiftAmount
-            for (let j = i + 1; j < rowNodes.length; j++) {
-                rowNodes[j].x += shiftAmount;
-            }
-        }
-    }
-});
+            // BƯỚC 1: ĐẶT KHOẢNG CÁCH CƠ BẢN D3 TREE
+            const treeLayout = d3.tree()
+                .nodeSize([200, 230]);
 
             treeLayout(root);
+
+            // BƯỚC 2: HẬU XỬ LÝ (POST-PROCESSING) - ĐIỀU CHỈNH TỌA ĐỘ X ĐỂ KHÔNG BAO GIỜ BỊ ĐÈ LÊN NHAU
+            const nodesByDepth = {};
+            root.descendants().filter(d => !d.data.isVirtual).forEach(d => {
+                if (!nodesByDepth[d.depth]) nodesByDepth[d.depth] = [];
+                nodesByDepth[d.depth].push(d);
+            });
+
+            Object.keys(nodesByDepth).forEach(depth => {
+                const rowNodes = nodesByDepth[depth];
+                rowNodes.sort((a, b) => a.x - b.x);
+
+                for (let i = 0; i < rowNodes.length - 1; i++) {
+                    const currNode = rowNodes[i];
+                    const nextNode = rowNodes[i + 1];
+
+                    const boxCurr = getNodeBoundingBox(currNode.data, viewMode);
+                    const boxNext = getNodeBoundingBox(nextNode.data, viewMode);
+
+                    // Mép phải thực tế của nút hiện tại
+                    const rightEdgeCurr = currNode.x + boxCurr.right;
+                    // Mép trái thực tế của nút tiếp theo
+                    const leftEdgeNext = nextNode.x + boxNext.left;
+
+                    const safeGap = 45; // Khoảng hở an toàn tối thiểu giữa 2 nhóm thẻ
+
+                    if (leftEdgeNext < rightEdgeCurr + safeGap) {
+                        const shiftDistance = (rightEdgeCurr + safeGap) - leftEdgeNext;
+                        // Dịch chuyển nút tiếp theo và tất cả các nút bên phải nó sang phải
+                        for (let j = i + 1; j < rowNodes.length; j++) {
+                            rowNodes[j].x += shiftDistance;
+                        }
+                    }
+                }
+            });
 
             g.selectAll(".link")
                 .data(root.links().filter(l => !l.source.data.isVirtual))
