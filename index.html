@@ -399,7 +399,7 @@
                 });
         });
 
-      function migrateSpouseData() {
+        function migrateSpouseData() {
             members.forEach(m => {
                 m.id = String(m.id).trim();
                 if (m.fatherId) m.fatherId = String(m.fatherId).trim();
@@ -708,8 +708,9 @@
 
         let zoomHandler;
         
-        // Lưu trữ trạng thái mở/đóng các nhánh node (collapsible state)
+        // Quản lý các nhánh bị thu gọn (Collapsed Nodes)
         let collapsedNodes = new Set();
+        let isInitialLoad = true;
 
         function renderTree() {
             const container = document.getElementById('tree-container');
@@ -785,21 +786,24 @@
                 hierarchyData = buildHierarchy(rootMembers[0].id);
             }
 
-            const root = d3.hierarchy(hierarchyData);
-
-            // Mặc định thu gọn các nhánh từ đời F6 trở xuống (chỉ hiện F1 đến F5) ở lần đầu tải hoặc khi chưa thao tác
-            root.descendants().forEach(d => {
-                if (!d.data.isVirtual) {
-                    // Nếu thế hệ > 5 và chưa có trong set quản lý trạng thái, mặc định cho vào collapsedNodes
-                    if (d.data.generation > 5 && !collapsedNodes.has(d.data.id) && d.children && d.children.length > 0) {
-                        collapsedNodes.add(d.data.id);
-                    }
-                    // Nếu node nằm trong danh sách collapsed, ẩn children đi
-                    if (collapsedNodes.has(d.data.id) && d.children) {
-                        d._children = d.children;
-                        d.children = null;
+            // Ở lần đầu tiên tải trang, tự động thu gọn tất cả các node từ đời F5 trở xuống
+            if (isInitialLoad) {
+                function initCollapse(d) {
+                    if (d.children && d.children.length > 0) {
+                        if (d.generation >= 5 && d.id !== "virtual-root") {
+                            collapsedNodes.add(d.id);
+                        }
+                        d.children.forEach(initCollapse);
                     }
                 }
+                initCollapse(hierarchyData);
+                isInitialLoad = false;
+            }
+
+            // Sử dụng d3.hierarchy có hỗ trợ cả children và _children
+            const root = d3.hierarchy(hierarchyData, d => {
+                if (collapsedNodes.has(d.id)) return null; // Ẩn con nếu bị thu gọn
+                return d.children;
             });
 
             const g = svg.append("g");
@@ -898,8 +902,8 @@
                 });
 
             // NÚT BẤM THU GỌN / MỞ RỘNG NHÁNH CON CHÁU [+] [-]
-            const toggleGroup = nodes.filter(d => (d.children && d.children.length > 0) || (d._children && d._children.length > 0))
-                .append("g")
+            const toggleNodes = nodes.filter(d => d.data.children && d.data.children.length > 0);
+            const toggleGroup = toggleNodes.append("g")
                 .attr("class", "toggle-btn")
                 .attr("transform", "translate(0, 25)")
                 .style("cursor", "pointer")
