@@ -884,26 +884,52 @@
             const BASE_UNIT = 160; // Bề rộng cơ sở 1 thẻ
             const MIN_PADDING = 30; // Khoảng hở tối thiểu giữa 2 thẻ cạnh nhau
 
-            const treeLayout = d3.tree()
-                .nodeSize([BASE_UNIT, 230])
-                .separation((a, b) => {
-                    const boxA = getNodeBoundingBox(a.data, viewMode);
-                    const boxB = getNodeBoundingBox(b.data, viewMode);
+            // 1. Cấu hình Tree Layout cơ bản
+const treeLayout = d3.tree()
+    .nodeSize([180, 230]);
 
-                    // Mép phải thực tế của nút A tính từ tâm A: boxA.right
-                    // Mép trái thực tế của nút B tính từ tâm B: boxB.left
-                    // Để mép phải A và mép trái B cách nhau đúng MIN_PADDING, khoảng cách 2 tâm cần là:
-                    const requiredCenterDistance = boxA.right - boxB.left + MIN_PADDING;
+treeLayout(root);
 
-                    let ratio = requiredCenterDistance / BASE_UNIT;
+// 2. BƯỚC SỬA LỖI CỐT LÕI: Điều chỉnh lại tọa độ X theo từng thế hệ (Depth)
+// Gom nhóm tất cả các nút theo từng hàng ngang (depth/thế hệ)
+const nodesByDepth = {};
+root.descendants().forEach(d => {
+    if (!nodesByDepth[d.depth]) nodesByDepth[d.depth] = [];
+    nodesByDepth[d.depth].push(d);
+});
 
-                    // Nếu 2 nút thuộc 2 nhánh khác nhau (khác bố mẹ), nới nhẹ khoảng cách giữa 2 dòng họ
-                    if (a.parent !== b.parent) {
-                        ratio += 0.2;
-                    }
+// Duyệt từng hàng ngang từ trái sang phải để dịch chuyển tọa độ X không bị đè
+Object.keys(nodesByDepth).forEach(depth => {
+    const rowNodes = nodesByDepth[depth];
+    // Sắp xếp các nút trên cùng hàng theo tọa độ X ban đầu của D3
+    rowNodes.sort((a, b) => a.x - b.x);
 
-                    return Math.max(1.0, ratio);
-                });
+    for (let i = 0; i < rowNodes.length - 1; i++) {
+        const currNode = rowNodes[i];
+        const nextNode = rowNodes[i + 1];
+
+        // Lấy khoảng bao phủ thực tế bên phải của nút hiện tại (bao gồm thẻ vợ/chồng)
+        const boxCurr = getNodeBoundingBox(currNode.data, viewMode);
+        const boxNext = getNodeBoundingBox(nextNode.data, viewMode);
+
+        // Mép phải thực tế của currNode = currNode.x + boxCurr.right
+        // Mép trái thực tế của nextNode = nextNode.x + boxNext.left
+        const currentRightEdge = currNode.x + boxCurr.right;
+        const nextLeftEdge = nextNode.x + boxNext.left;
+        
+        const minGap = 40; // Khoảng cách an toàn giữa 2 nhóm thẻ (40px)
+
+        // Nếu mép trái người sau bị đè hoặc quá gần mép phải người trước
+        if (nextLeftEdge < currentRightEdge + minGap) {
+            const shiftAmount = (currentRightEdge + minGap) - nextLeftEdge;
+            
+            // Dịch chuyển tất cả các nút phía sau sang bên phải một khoảng shiftAmount
+            for (let j = i + 1; j < rowNodes.length; j++) {
+                rowNodes[j].x += shiftAmount;
+            }
+        }
+    }
+});
 
             treeLayout(root);
 
