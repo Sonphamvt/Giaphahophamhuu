@@ -145,19 +145,15 @@
         <!-- VIEW 2: DANH SÁCH THÀNH VIÊN -->
         <section id="view-list" class="hidden space-y-4">
             <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex flex-wrap gap-3 justify-between items-center">
-                <div class="relative flex-grow max-w-sm">
+                <div class="relative flex-grow max-w-md">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
                     <input type="text" id="search-input" oninput="renderTable()" placeholder="Tìm theo tên, quê quán..." class="w-full pl-9 pr-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:border-crimson">
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <!-- Ô LỌC NHÁNH CON CHÁU -->
-                    <select id="filter-ancestor" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
-                        <option value="">-- Tất cả các nhánh (Con cháu của...) --</option>
-                    </select>
-                    <select id="filter-generation" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
+                <div class="flex space-x-2">
+                    <select id="filter-generation" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson">
                         <option value="">-- Tất cả thế hệ --</option>
                     </select>
-                    <select id="filter-status" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
+                    <select id="filter-status" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson">
                         <option value="">-- Trạng thái --</option>
                         <option value="living">Còn sống</option>
                         <option value="deceased">Đã mất</option>
@@ -316,7 +312,7 @@
                     </div>
                 </div>
 
-                <!-- Thông tin Bố Mẹ đẻ (Dành cho Dâu/Rể) -->
+                <!-- Thông tin Bố Mẹ đẻ (Dành cho Dâu/Rể) có đầy đủ Ngày sinh, Trạng thái, Ngày giỗ -->
                 <div class="border-t border-stone-200 pt-3 bg-amber-50/70 p-3 rounded-lg border border-amber-200 space-y-3">
                     <p class="text-xs font-bold text-amber-900 uppercase"><i class="fa-solid fa-house-user mr-1"></i> Bố Mẹ Đẻ (Dành cho Dâu / Rể - Hiển thị ở chế độ Ngoại Tộc)</p>
                     
@@ -393,7 +389,6 @@
                     migrateSpouseData();
                     recalculateAllGenerations();
                     updateGenerationFilterOptions();
-                    updateAncestorFilterOptions();
                     renderTree();
                     renderTable();
                     renderAnniversaries();
@@ -476,7 +471,6 @@
                             recalculateAllGenerations();
                             saveMembers();
                             updateGenerationFilterOptions();
-                            updateAncestorFilterOptions();
                             renderTree();
                             renderTable();
                             renderAnniversaries();
@@ -567,7 +561,6 @@
 
         function updateGenerationFilterOptions() {
             const filterSelect = document.getElementById('filter-generation');
-            if (!filterSelect) return;
             const currentValue = filterSelect.value;
             const generations = [...new Set(members.map(m => m.generation || 1))].sort((a, b) => a - b);
 
@@ -576,39 +569,6 @@
                 filterSelect.innerHTML += `<option value="${gen}">Đời F${gen}</option>`;
             });
             filterSelect.value = currentValue;
-        }
-
-        function updateAncestorFilterOptions() {
-            const ancestorSelect = document.getElementById('filter-ancestor');
-            if (!ancestorSelect) return;
-            const currentValue = ancestorSelect.value;
-
-            let sortedMembers = [...members].sort((a, b) => (a.generation - b.generation) || (a.orderIndex - b.orderIndex));
-
-            ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>';
-            sortedMembers.forEach(m => {
-                const genLabel = m.generation ? `(Đời F${m.generation})` : '';
-                ancestorSelect.innerHTML += `<option value="${m.id}">Con cháu của: ${m.name} ${genLabel}</option>`;
-            });
-            ancestorSelect.value = currentValue;
-        }
-
-        function getAllDescendantIds(ancestorId) {
-            let descendantSet = new Set();
-            let queue = [ancestorId];
-
-            while (queue.length > 0) {
-                let currentId = queue.shift();
-                let children = members.filter(m => m.fatherId === currentId || m.motherId === currentId);
-                
-                children.forEach(c => {
-                    if (!descendantSet.has(c.id)) {
-                        descendantSet.add(c.id);
-                        queue.push(c.id);
-                    }
-                });
-            }
-            return descendantSet;
         }
 
         function switchTab(tab) {
@@ -628,7 +588,6 @@
                 document.getElementById('view-list').classList.remove('hidden');
                 document.getElementById('tab-list').className = "px-3 py-1.5 rounded-md text-sm font-medium bg-amber-gold text-crimson font-bold shadow";
                 updateGenerationFilterOptions();
-                updateAncestorFilterOptions();
                 renderTable();
             } else if (tab === 'anniversaries') {
                 document.getElementById('view-anniversaries').classList.remove('hidden');
@@ -748,39 +707,14 @@
         }
 
         let zoomHandler;
+        
+        // Quản lý các nhánh bị thu gọn (Collapsed Nodes)
         let collapsedNodes = new Set();
         let isInitialLoad = true;
-
-        // TÍNH TOÁN BIÊN GIỚI VẬT LÝ CHÍNH XÁC (TÍNH TỪ TÂM NÚT QUA BÊN TRÁI VÀ BÊN PHẢI)
-        function getNodeBoundingBox(nodeData, viewMode) {
-            let leftEdge = -80;  // Mép trái thẻ chính
-            let rightEdge = 80;  // Mép phải thẻ chính
-
-            const spouseCount = (nodeData.spouseIds || []).length;
-            if (spouseCount > 0) {
-                // Mỗi vợ/chồng dời sang phải 170px và rộng 80px mỗi bên từ tâm của họ
-                rightEdge = 170 + ((spouseCount - 1) * 170) + 80;
-            }
-
-            if (viewMode === 'all' && spouseCount > 0) {
-                const spouseList = (nodeData.spouseIds || []).map(id => members.find(m => m.id === id)).filter(Boolean);
-                spouseList.forEach((sp, idx) => {
-                    if (sp.inlawFather || sp.inlawMother) {
-                        const spouseCenterX = 170 + (idx * 170);
-                        if (sp.inlawFather) leftEdge = Math.min(leftEdge, spouseCenterX - 110);
-                        if (sp.inlawMother) rightEdge = Math.max(rightEdge, spouseCenterX + 110);
-                    }
-                });
-            }
-
-            return { left: leftEdge, right: rightEdge };
-        }
 
         function renderTree() {
             const container = document.getElementById('tree-container');
             const svg = d3.select("#tree-svg");
-
-            let currentTransform = d3.zoomTransform(svg.node());
             svg.selectAll("*").remove();
 
             const width = container.clientWidth;
@@ -852,6 +786,7 @@
                 hierarchyData = buildHierarchy(rootMembers[0].id);
             }
 
+            // Ở lần đầu tiên tải trang, tự động thu gọn tất cả các node từ đời F5 trở xuống
             if (isInitialLoad) {
                 function initCollapse(d) {
                     if (d.children && d.children.length > 0) {
@@ -865,8 +800,9 @@
                 isInitialLoad = false;
             }
 
+            // Sử dụng d3.hierarchy có hỗ trợ cả children và _children
             const root = d3.hierarchy(hierarchyData, d => {
-                if (collapsedNodes.has(d.id)) return null;
+                if (collapsedNodes.has(d.id)) return null; // Ẩn con nếu bị thu gọn
                 return d.children;
             });
 
@@ -877,46 +813,8 @@
             });
             svg.call(zoomHandler);
 
-            // BƯỚC 1: ĐẶT KHOẢNG CÁCH CƠ BẢN D3 TREE
-            const treeLayout = d3.tree()
-                .nodeSize([200, 230]);
-
+            const treeLayout = d3.tree().nodeSize([240, 210]);
             treeLayout(root);
-
-            // BƯỚC 2: HẬU XỬ LÝ (POST-PROCESSING) - ĐIỀU CHỈNH TỌA ĐỘ X ĐỂ KHÔNG BAO GIỜ BỊ ĐÈ LÊN NHAU
-            const nodesByDepth = {};
-            root.descendants().filter(d => !d.data.isVirtual).forEach(d => {
-                if (!nodesByDepth[d.depth]) nodesByDepth[d.depth] = [];
-                nodesByDepth[d.depth].push(d);
-            });
-
-            Object.keys(nodesByDepth).forEach(depth => {
-                const rowNodes = nodesByDepth[depth];
-                rowNodes.sort((a, b) => a.x - b.x);
-
-                for (let i = 0; i < rowNodes.length - 1; i++) {
-                    const currNode = rowNodes[i];
-                    const nextNode = rowNodes[i + 1];
-
-                    const boxCurr = getNodeBoundingBox(currNode.data, viewMode);
-                    const boxNext = getNodeBoundingBox(nextNode.data, viewMode);
-
-                    // Mép phải thực tế của nút hiện tại
-                    const rightEdgeCurr = currNode.x + boxCurr.right;
-                    // Mép trái thực tế của nút tiếp theo
-                    const leftEdgeNext = nextNode.x + boxNext.left;
-
-                    const safeGap = 45; // Khoảng hở an toàn tối thiểu giữa 2 nhóm thẻ
-
-                    if (leftEdgeNext < rightEdgeCurr + safeGap) {
-                        const shiftDistance = (rightEdgeCurr + safeGap) - leftEdgeNext;
-                        // Dịch chuyển nút tiếp theo và tất cả các nút bên phải nó sang phải
-                        for (let j = i + 1; j < rowNodes.length; j++) {
-                            rowNodes[j].x += shiftDistance;
-                        }
-                    }
-                }
-            });
 
             g.selectAll(".link")
                 .data(root.links().filter(l => !l.source.data.isVirtual))
@@ -1003,19 +901,20 @@
                     }
                 });
 
+            // NÚT BẤM THU GỌN / MỞ RỘNG NHÁNH CON CHÁU [+] [-]
             const toggleNodes = nodes.filter(d => d.data.children && d.data.children.length > 0);
             const toggleGroup = toggleNodes.append("g")
                 .attr("class", "toggle-btn")
                 .attr("transform", "translate(0, 25)")
                 .style("cursor", "pointer")
                 .on("click", (event, d) => {
-                    event.stopPropagation();
+                    event.stopPropagation(); // Không bị mở bảng chi tiết khi bấm nút cộng trừ
                     if (collapsedNodes.has(d.data.id)) {
                         collapsedNodes.delete(d.data.id);
                     } else {
                         collapsedNodes.add(d.data.id);
                     }
-                    renderTree();
+                    renderTree(); // Vẽ lại sơ đồ ngay lập tức
                 });
 
             toggleGroup.append("circle")
@@ -1060,10 +959,9 @@
                     if (!spouse) return;
 
                     const nodeGroup = d3.select(this);
-                    
+                    const xOffsetStart = 80 + (spouseIndex * 170);
+                    const xOffsetEnd = 95 + (spouseIndex * 170);
                     const groupTranslate = 170 + (spouseIndex * 170);
-                    const xOffsetStart = (spouseIndex === 0) ? 80 : (groupTranslate - 170 + 80);
-                    const xOffsetEnd = groupTranslate - 80;
 
                     nodeGroup.append("line")
                         .attr("x1", xOffsetStart)
@@ -1071,7 +969,7 @@
                         .attr("x2", xOffsetEnd)
                         .attr("y2", 0)
                         .attr("stroke", "#d4af37")
-                        .attr("stroke-width", "2.5");
+                        .attr("stroke-width", "2");
 
                     const checkSpouseUpcoming = checkUpcomingMemberAnniversary(spouse);
 
@@ -1153,14 +1051,14 @@
                             
                             if (isDeceased) {
                                 card.append("clipPath").attr("id", `clip-inlaw-${spouse.id}-${isFather?'f':'m'}`)
-                                    .append("rect").attr("width", 100).attr("height", 34).attr("x", -50).attr("y", -17).attr("rx", 6);
+                                    .append("rect").attr("width", 110).attr("height", 36).attr("x", -55).attr("y", -18).attr("rx", 6);
                             }
 
                             card.append("rect")
-                                .attr("width", 100)
-                                .attr("height", 34)
-                                .attr("x", -50)
-                                .attr("y", -17)
+                                .attr("width", 110)
+                                .attr("height", 36)
+                                .attr("x", -55)
+                                .attr("y", -18)
                                 .attr("rx", 6)
                                 .attr("fill", fillColor)
                                 .attr("stroke", borderColor)
@@ -1169,13 +1067,13 @@
 
                             if (isDeceased) {
                                 card.append("path")
-                                    .attr("d", "M -50 -11 A 5 5 0 0 1 -45 -17 L -32 -17 L -50 2 Z")
+                                    .attr("d", "M -55 -12 A 6 6 0 0 1 -49 -18 L -35 -18 L -55 2 Z")
                                     .attr("fill", "#1c1917");
                             }
 
                             card.append("text")
                                 .attr("x", 0)
-                                .attr("y", -3)
+                                .attr("y", -4)
                                 .attr("text-anchor", "middle")
                                 .attr("class", "font-bold text-[10px]")
                                 .attr("fill", "#78350f")
@@ -1198,19 +1096,15 @@
                                     }
                                 });
                         }
-                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -55, true);
-                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 55, false);
+                        drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -75, true);
+                        drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 75, false);
                     }
 
                     spouseIndex++;
                 });
             });
 
-            if (currentTransform && currentTransform.k !== 1 && currentTransform.x !== 0) {
-                svg.call(zoomHandler.transform, currentTransform);
-            } else {
-                svg.call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85));
-            }
+            svg.call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85));
         }
 
         function zoomIn() { d3.select("#tree-svg").transition().call(zoomHandler.scaleBy, 1.2); }
@@ -1219,29 +1113,18 @@
 
         function renderTable() {
             updateGenerationFilterOptions();
-            updateAncestorFilterOptions();
-
             const tbody = document.getElementById('member-table-body');
             const search = document.getElementById('search-input').value.toLowerCase();
             const genFilter = document.getElementById('filter-generation').value;
             const statusFilter = document.getElementById('filter-status').value;
-            const ancestorFilter = document.getElementById('filter-ancestor').value;
 
             tbody.innerHTML = '';
-
-            let allowedDescendants = null;
-            if (ancestorFilter) {
-                allowedDescendants = getAllDescendantIds(ancestorFilter);
-                allowedDescendants.add(ancestorFilter);
-            }
 
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
                 const matchStatus = !statusFilter || (statusFilter === 'living' ? m.status === 'Còn sống' : m.status === 'Đã mất');
-                const matchAncestor = !ancestorFilter || (allowedDescendants && allowedDescendants.has(m.id));
-
-                return matchSearch && matchGen && matchStatus && matchAncestor;
+                return matchSearch && matchGen && matchStatus;
             });
 
             filtered.sort((a, b) => {
@@ -1697,11 +1580,11 @@
             saveMembers();
             closeModal();
             updateGenerationFilterOptions();
-            updateAncestorFilterOptions();
             renderTree();
             renderTable();
             renderAnniversaries();
 
+            // GỬI DỮ LIỆU LÊN GOOGLE SHEETS QUA WEB APP
             fetch(WEB_APP_URL, {
                 method: "POST",
                 mode: "no-cors",
@@ -1736,7 +1619,6 @@
                 recalculateAllGenerations();
                 saveMembers();
                 updateGenerationFilterOptions();
-                updateAncestorFilterOptions();
                 renderTree();
                 renderTable();
                 renderAnniversaries();
