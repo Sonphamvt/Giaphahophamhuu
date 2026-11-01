@@ -852,7 +852,9 @@
             });
             svg.call(zoomHandler);
 
-            const treeLayout = d3.tree().nodeSize([240, 210]);
+            // NÂNG CẤP: Tăng kích thước nodeSize ngang từ 240 -> 280 và dọc từ 210 -> 230
+            // Đảm bảo thẻ Vợ/Chồng (Dâu/Rể) không bao giờ bị đè hoặc che bởi thẻ thành viên khác!
+            const treeLayout = d3.tree().nodeSize([280, 230]);
             treeLayout(root);
 
             g.selectAll(".link")
@@ -997,6 +999,7 @@
                     if (!spouse) return;
 
                     const nodeGroup = d3.select(this);
+                    // Cân chỉnh xOffset phù hợp vừa khít không bị đè
                     const xOffsetStart = 80 + (spouseIndex * 170);
                     const xOffsetEnd = 95 + (spouseIndex * 170);
                     const groupTranslate = 170 + (spouseIndex * 170);
@@ -1473,7 +1476,7 @@
         function openAddModal() {
             let pwd = prompt("Nhập mật khẩu quản trị để thêm thành viên:");
             if (pwd !== ADMIN_PASSWORD) {
-                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này. Liên hệ 0972600567 để lấy mật khẩu!");
+                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này.");
                 return;
             }
 
