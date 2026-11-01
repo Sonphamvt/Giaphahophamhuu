@@ -751,14 +751,32 @@
         let collapsedNodes = new Set();
         let isInitialLoad = true;
 
-        // Hàm tính toán bề rộng mở rộng thực tế của từng nút (pixel)
-        function getNodeVisualWidth(nodeData, viewMode) {
-            let width = 160; // Bề rộng thẻ chính
+        // HÀM TÍNH TOÁN BỀ RỘNG VẬT LÝ VÀ PHẠM VI BAO PHỦ BÊN TRÁI / BÊN PHẢI CỦA MỖI NÚT THÀNH VIÊN
+        function getNodeBoundingBox(nodeData, viewMode) {
+            // Thẻ chính rộng 160px (-80 đến +80 tính từ tâm)
+            let leftEdge = -80;
+            let rightEdge = 80;
+
             const spouseCount = (nodeData.spouseIds || []).length;
             if (spouseCount > 0) {
-                width += spouseCount * 170; // Cộng thêm khoảng cách đặt mỗi thẻ vợ/chồng
+                // Thẻ Vợ/Chồng cuối cùng mở rộng về bên phải
+                const lastSpouseOffset = 170 + (spouseCount - 1) * 170;
+                rightEdge = lastSpouseOffset + 80;
             }
-            return width;
+
+            // Nếu ở chế độ Ngoại Tộc, tính thêm phạm vi nhô ra của thẻ Bố Mẹ Thông Gia
+            if (viewMode === 'all' && spouseCount > 0) {
+                const spouseList = (nodeData.spouseIds || []).map(id => members.find(m => m.id === id)).filter(Boolean);
+                spouseList.forEach((sp, idx) => {
+                    if (sp.inlawFather || sp.inlawMother) {
+                        const spouseCenter = 170 + (idx * 170);
+                        if (sp.inlawFather) leftEdge = Math.min(leftEdge, spouseCenter - 110);
+                        if (sp.inlawMother) rightEdge = Math.max(rightEdge, spouseCenter + 110);
+                    }
+                });
+            }
+
+            return { left: leftEdge, right: rightEdge, totalWidth: rightEdge - leftEdge };
         }
 
         function renderTree() {
@@ -862,24 +880,26 @@
             });
             svg.call(zoomHandler);
 
-            // THUẬT TOÁN TÍNH KHOẢNG CÁCH NGHỆ THUẬT VÀ TỐI ƯU HÀNG NGANG CHUẨN XÁC
+            // THUẬT TOÁN ĐẾM TỔNG SỐ THẺ VÀ ĐIỀU CHỈNH KHOẢNG CÁCH NGHỆ THUẬT TỰ ĐỘNG CÂN BẰNG HÀNG NGANG
+            const BASE_UNIT = 160; // Bề rộng cơ sở 1 thẻ
+            const MIN_PADDING = 30; // Khoảng hở tối thiểu giữa 2 thẻ cạnh nhau
+
             const treeLayout = d3.tree()
-                .nodeSize([180, 230]) // Đặt kích thước cơ bản nhỏ hơn để cây thu gọn
+                .nodeSize([BASE_UNIT, 230])
                 .separation((a, b) => {
-                    // Lấy bề rộng hiển thị của nút a (bao gồm cả các thẻ vợ/chồng)
-                    const wA = getNodeVisualWidth(a.data, viewMode);
-                    const wB = getNodeVisualWidth(b.data, viewMode);
-                    
-                    // Khoảng cách tối thiểu giữa 2 mép thẻ gần nhất là 30px
-                    const minGap = 35;
-                    const requiredDistance = (wA / 2) + (wB / 2) + minGap;
+                    const boxA = getNodeBoundingBox(a.data, viewMode);
+                    const boxB = getNodeBoundingBox(b.data, viewMode);
 
-                    // Quy đổi về hệ số ratio so với nodeSize cơ sở (180px)
-                    let ratio = requiredDistance / 180;
+                    // Mép phải thực tế của nút A tính từ tâm A: boxA.right
+                    // Mép trái thực tế của nút B tính từ tâm B: boxB.left
+                    // Để mép phải A và mép trái B cách nhau đúng MIN_PADDING, khoảng cách 2 tâm cần là:
+                    const requiredCenterDistance = boxA.right - boxB.left + MIN_PADDING;
 
-                    // Nếu là 2 anh em chung bố mẹ thì để sát hơn chút, khác bố mẹ (khác nhánh) thì tạo khoảng hở riêng
+                    let ratio = requiredCenterDistance / BASE_UNIT;
+
+                    // Nếu 2 nút thuộc 2 nhánh khác nhau (khác bố mẹ), nới nhẹ khoảng cách giữa 2 dòng họ
                     if (a.parent !== b.parent) {
-                        ratio += 0.25;
+                        ratio += 0.2;
                     }
 
                     return Math.max(1.0, ratio);
