@@ -51,6 +51,11 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+    <!-- Mật khẩu quản trị -->
+    <script>
+        const ADMIN_PASSWORD = "123"; // Ông có thể thay đổi mật khẩu tùy ý tại đây
+    </script>
+
     <!-- Header / Navbar -->
     <header class="bg-crimson text-white shadow-lg sticky top-0 z-30 border-b-2 border-amber-gold">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center">
@@ -106,7 +111,7 @@
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-wrap justify-between items-center text-sm text-amber-900">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-circle-info text-amber-700"></i>
-                    <span>Kéo thả để di chuyển, cuộn chuột để thu phóng.</span>
+                    <span>Kéo thả để di chuyển, cuộn chuột để thu phóng. Bấm nút [+] [-] trên thẻ để mở/thu gọn nhánh con cháu.</span>
                 </div>
                 
                 <!-- BỘ LỌC CHẾ ĐỘ XEM NỘI TỘC / NGOẠI TỘC -->
@@ -702,6 +707,10 @@
         }
 
         let zoomHandler;
+        
+        // Lưu trữ trạng thái mở/đóng các nhánh node (collapsible state)
+        let collapsedNodes = new Set();
+
         function renderTree() {
             const container = document.getElementById('tree-container');
             const svg = d3.select("#tree-svg");
@@ -777,6 +786,21 @@
             }
 
             const root = d3.hierarchy(hierarchyData);
+
+            // Mặc định thu gọn các nhánh từ đời F6 trở xuống (chỉ hiện F1 đến F5) ở lần đầu tải hoặc khi chưa thao tác
+            root.descendants().forEach(d => {
+                if (!d.data.isVirtual) {
+                    // Nếu thế hệ > 5 và chưa có trong set quản lý trạng thái, mặc định cho vào collapsedNodes
+                    if (d.data.generation > 5 && !collapsedNodes.has(d.data.id) && d.children && d.children.length > 0) {
+                        collapsedNodes.add(d.data.id);
+                    }
+                    // Nếu node nằm trong danh sách collapsed, ẩn children đi
+                    if (collapsedNodes.has(d.data.id) && d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                    }
+                }
+            });
 
             const g = svg.append("g");
 
@@ -872,6 +896,36 @@
                         return `${genText} • ${birthInfo}`;
                     }
                 });
+
+            // NÚT BẤM THU GỌN / MỞ RỘNG NHÁNH CON CHÁU [+] [-]
+            const toggleGroup = nodes.filter(d => (d.children && d.children.length > 0) || (d._children && d._children.length > 0))
+                .append("g")
+                .attr("class", "toggle-btn")
+                .attr("transform", "translate(0, 25)")
+                .style("cursor", "pointer")
+                .on("click", (event, d) => {
+                    event.stopPropagation(); // Không bị mở bảng chi tiết khi bấm nút cộng trừ
+                    if (collapsedNodes.has(d.data.id)) {
+                        collapsedNodes.delete(d.data.id);
+                    } else {
+                        collapsedNodes.add(d.data.id);
+                    }
+                    renderTree(); // Vẽ lại sơ đồ ngay lập tức
+                });
+
+            toggleGroup.append("circle")
+                .attr("r", 9)
+                .attr("fill", "#78350f")
+                .attr("stroke", "#ffffff")
+                .attr("stroke-width", 1.5);
+
+            toggleGroup.append("text")
+                .attr("dy", "3.5")
+                .attr("text-anchor", "middle")
+                .attr("fill", "#ffffff")
+                .attr("font-size", "11px")
+                .attr("font-weight", "bold")
+                .text(d => collapsedNodes.has(d.data.id) ? "+" : "-");
 
             nodes.each(function(d) {
                 const currentId = d.data.id;
@@ -1038,10 +1092,8 @@
                                     }
                                 });
                         }
-                        // Sửa vị trí xPos của bố đẻ và mẹ đẻ từ -60 / 60 thành -70 / 70 hoặc tách rộng hơn tùy ý:
                         drawInlawCard(spouse.inlawFather, spouse.inlawFatherBirth, spouse.inlawFatherStatus, spouse.inlawFatherDeath, -75, true);
                         drawInlawCard(spouse.inlawMother, spouse.inlawMotherBirth, spouse.inlawMotherStatus, spouse.inlawMotherDeath, 75, false);
-                        
                     }
 
                     spouseIndex++;
@@ -1362,6 +1414,12 @@
         }
 
         function openAddModal() {
+            let pwd = prompt("Nhập mật khẩu quản trị để thêm thành viên:");
+            if (pwd !== ADMIN_PASSWORD) {
+                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này.");
+                return;
+            }
+
             document.getElementById('modal-title').innerText = "Thêm Thành Viên Mới";
             document.getElementById('member-form').reset();
             document.getElementById('member-id').value = '';
@@ -1374,6 +1432,12 @@
         }
 
         function openEditModal(id) {
+            let pwd = prompt("Nhập mật khẩu quản trị để chỉnh sửa thành viên:");
+            if (pwd !== ADMIN_PASSWORD) {
+                alert("Sai mật khẩu! Không có quyền chỉnh sửa.");
+                return;
+            }
+
             closeDrawer();
             const m = members.find(item => item.id === id);
             if (!m) return;
@@ -1532,6 +1596,12 @@
         }
 
         function deleteMember(id) {
+            let pwd = prompt("Nhập mật khẩu quản trị để xóa thành viên:");
+            if (pwd !== ADMIN_PASSWORD) {
+                alert("Sai mật khẩu! Không được phép xóa.");
+                return;
+            }
+
             if (confirm("Ông có chắc chắn muốn xóa thành viên này khỏi gia phả?")) {
                 members = members.filter(m => m.id !== id);
                 members.forEach(m => {
