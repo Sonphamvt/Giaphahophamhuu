@@ -709,15 +709,13 @@
 
     if (!members || members.length === 0) return;
 
-    // Chuyển đổi danh sách thành cấu trúc phân cấp (Hierarchical Data) dựa trên fatherId
+    // 1. Xây dựng cấu trúc phân cấp từ danh sách thành viên dựa trên fatherId
     let dataMap = {};
     members.forEach(m => {
         dataMap[m.id] = { ...m, children: [] };
     });
 
-    let rootData = null;
     let roots = [];
-
     members.forEach(m => {
         if (m.fatherId && dataMap[m.fatherId]) {
             dataMap[m.fatherId].children.push(dataMap[m.id]);
@@ -726,7 +724,7 @@
         }
     });
 
-    // Nếu có nhiều gốc, tạo một node ẩn làm gốc chung
+    // Tạo root node giả định nếu có nhiều cụ tổ gốc
     let rootNode;
     if (roots.length === 1) {
         rootNode = d3.hierarchy(roots[0], d => d.children);
@@ -735,19 +733,18 @@
         rootNode = d3.hierarchy(pseudoRoot, d => d.children);
     }
 
-    // THIẾT LẬP MẶC ĐỊNH THU GỌN TỪ ĐỜI F6 TRỞ XUỐNG (Chỉ hiển thị F1 đến F5)
+    // 2. Mặc định thu gọn các nhánh từ đời F6 trở xuống (chỉ hiện F1 đến F5)
     rootNode.descendants().forEach(d => {
-        // Nếu thế hệ (generation) lớn hơn 5, tự động thu gọn (collapsed)
         if (d.data.generation > 5 && d.children) {
             d._children = d.children;
             d.children = null;
         }
     });
 
+    // 3. Khởi tạo cây D3.js
     const treemap = d3.tree().nodeSize([340, 180]);
     treemap(rootNode);
 
-    // Thiết lập khung SVG hiển thị
     const svg = d3.select("#tree-container").append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
@@ -758,7 +755,7 @@
 
     const g = svg.append("g").attr("transform", "translate(100, 50)");
 
-    // Vẽ các đường nối (links)
+    // 4. Vẽ các đường nối (links)
     g.selectAll(".link")
         .data(rootNode.links())
         .enter().append("path")
@@ -770,14 +767,14 @@
             .x(d => d.x)
             .y(d => d.y));
 
-    // Vẽ các node thành viên
+    // 5. Vẽ các node thành viên
     const node = g.selectAll(".node")
         .data(rootNode.descendants())
         .enter().append("g")
         .attr("class", "node")
         .attr("transform", d => `translate(${d.x},${d.y})`);
 
-    // Vẽ khung thẻ thành viên
+    // Khung thẻ thành viên
     node.append("rect")
         .attr("width", 160)
         .attr("height", 70)
@@ -789,11 +786,10 @@
         .attr("stroke-width", 2)
         .style("cursor", "pointer")
         .on("click", (event, d) => {
-            // Khi click vào thẻ, mở drawer xem chi tiết
             if (d.data.id !== "root") showDetail(d.data.id);
         });
 
-    // Thêm nội dung tên và đời vào thẻ
+    // Tên thành viên
     node.append("text")
         .attr("dy", "-5")
         .attr("text-anchor", "middle")
@@ -801,6 +797,7 @@
         .attr("fill", "#1c1917")
         .text(d => d.data.name || "");
 
+    // Đời thành viên
     node.append("text")
         .attr("dy", "18")
         .attr("text-anchor", "middle")
@@ -808,15 +805,14 @@
         .attr("fill", "#78716c")
         .text(d => `Đời F${d.data.generation || 1}`);
 
-    // NÚT BẤM THU GỌN / MỞ RỘNG (COLLAPSE / EXPAND TOGGLE)
-    // Chỉ hiện nút này nếu node có con cháu (hoặc đã bị ẩn _children)
+    // 6. Nút bấm thu gọn / mở rộng nhánh (+) (-)
     const toggleGroup = node.filter(d => d.children || d._children)
         .append("g")
         .attr("class", "toggle-btn")
         .attr("transform", "translate(0, 35)")
         .style("cursor", "pointer")
         .on("click", (event, d) => {
-            event.stopPropagation(); // Tránh bị ăn sự kiện click vào thẻ
+            event.stopPropagation(); // Chặn sự kiện click nhầm vào thẻ
             if (d.children) {
                 d._children = d.children;
                 d.children = null;
@@ -824,7 +820,7 @@
                 d.children = d._children;
                 d._children = null;
             }
-            renderTree(); // Vẽ lại sơ đồ sau khi đóng/mở nhánh
+            renderTree(); // Vẽ lại sơ đồ khi bấm đóng/mở
         });
 
     toggleGroup.append("circle")
