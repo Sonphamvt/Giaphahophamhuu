@@ -111,7 +111,7 @@
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-wrap justify-between items-center text-sm text-amber-900">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-circle-info text-amber-700"></i>
-                    <span>Kéo thả để di chuyển, cuộn chuột để thu phóng. Bấm nút [+] [-] trên thẻ để mở/thu gọn nhánh con cháu.</span>
+                    <span>Bấm nút [+] [-] trên thẻ để mở/thu gọn nhánh con cháu.</span>
                 </div>
                 
                 <!-- BỘ LỌC CHẾ ĐỘ XEM NỘI TỘC / NGOẠI TỘC -->
@@ -751,6 +751,16 @@
         let collapsedNodes = new Set();
         let isInitialLoad = true;
 
+        // Hàm tính toán bề rộng mở rộng thực tế của từng nút (pixel)
+        function getNodeVisualWidth(nodeData, viewMode) {
+            let width = 160; // Bề rộng thẻ chính
+            const spouseCount = (nodeData.spouseIds || []).length;
+            if (spouseCount > 0) {
+                width += spouseCount * 170; // Cộng thêm khoảng cách đặt mỗi thẻ vợ/chồng
+            }
+            return width;
+        }
+
         function renderTree() {
             const container = document.getElementById('tree-container');
             const svg = d3.select("#tree-svg");
@@ -852,25 +862,27 @@
             });
             svg.call(zoomHandler);
 
-            // Cấu hình D3 Tree với hàm separation tự động tính khoảng cách động theo số lượng thẻ Vợ/Chồng
+            // THUẬT TOÁN TÍNH KHOẢNG CÁCH NGHỆ THUẬT VÀ TỐI ƯU HÀNG NGANG CHUẨN XÁC
             const treeLayout = d3.tree()
-                .nodeSize([200, 230])
+                .nodeSize([180, 230]) // Đặt kích thước cơ bản nhỏ hơn để cây thu gọn
                 .separation((a, b) => {
-                    let aSpouses = (a.data.spouseIds || []).length;
-                    let bSpouses = (b.data.spouseIds || []).length;
+                    // Lấy bề rộng hiển thị của nút a (bao gồm cả các thẻ vợ/chồng)
+                    const wA = getNodeVisualWidth(a.data, viewMode);
+                    const wB = getNodeVisualWidth(b.data, viewMode);
                     
-                    // Nếu là chế độ xem ngoại tộc, kiểm tra xem có bố mẹ đẻ không để cộng thêm diện tích
-                    if (viewMode === 'all') {
-                        const aSpouseObj = (a.data.spouseIds || []).map(id => members.find(m => m.id === id)).filter(Boolean);
-                        if (aSpouseObj.some(s => s.inlawFather || s.inlawMother)) aSpouses += 0.5;
+                    // Khoảng cách tối thiểu giữa 2 mép thẻ gần nhất là 30px
+                    const minGap = 35;
+                    const requiredDistance = (wA / 2) + (wB / 2) + minGap;
 
-                        const bSpouseObj = (b.data.spouseIds || []).map(id => members.find(m => m.id === id)).filter(Boolean);
-                        if (bSpouseObj.some(s => s.inlawFather || s.inlawMother)) bSpouses += 0.5;
+                    // Quy đổi về hệ số ratio so với nodeSize cơ sở (180px)
+                    let ratio = requiredDistance / 180;
+
+                    // Nếu là 2 anh em chung bố mẹ thì để sát hơn chút, khác bố mẹ (khác nhánh) thì tạo khoảng hở riêng
+                    if (a.parent !== b.parent) {
+                        ratio += 0.25;
                     }
 
-                    // Cơ bản cách nhau 1.15. Nếu có vợ/chồng thì cộng thêm 0.95 đơn vị để nới rộng vị trí tuyệt đối không đè nhau
-                    const baseSep = a.parent === b.parent ? 1.15 : 1.45;
-                    return baseSep + (aSpouses + bSpouses) * 0.95;
+                    return Math.max(1.0, ratio);
                 });
 
             treeLayout(root);
@@ -1018,10 +1030,7 @@
 
                     const nodeGroup = d3.select(this);
                     
-                    // KHOẢNG CÁCH TỪ TÂM THẺ CHÍNH ĐẾN TÂM THẺ VỢ/CHỒNG (170px)
                     const groupTranslate = 170 + (spouseIndex * 170);
-
-                    // ĐƯỜNG NỐI VÀNG NỐI LIỀN TỪ MÉP PHẢI THẺ TRƯỚC ĐẾN MÉP TRÁI THẺ VỢ/CHỒNG (LIỀN NÉT 100%)
                     const xOffsetStart = (spouseIndex === 0) ? 80 : (groupTranslate - 170 + 80);
                     const xOffsetEnd = groupTranslate - 80;
 
