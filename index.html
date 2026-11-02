@@ -413,13 +413,15 @@
                     recalculateAllGenerations();
                     updateGenerationFilterOptions();
                     updateAncestorFilterOptions();
+                    
+                    // GỌI RENDER BẢNG VÀ CÂY TẠI ĐÂY SAU KHI ĐÃ CÓ ĐỦ DỮ LIỆU
                     renderTree();
                     renderTable();
                     renderAnniversaries();
                 })
                 .catch(error => {
                     console.error("Lỗi khi tải dữ liệu từ Google Sheets:", error);
-                    alert("Không thể tải dữ liệu từ Google Sheets. Vui lòng kiểm tra lại kết nối internet hoặc URL App Script!");
+                    alert("Không thể tải dữ liệu từ Google Sheets.");
                 });
         });
 
@@ -1234,22 +1236,27 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
         function resetZoom() { d3.select("#tree-svg").transition().call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85)); }
 
         function renderTable() {
-            updateGenerationFilterOptions();
-            updateAncestorFilterOptions();
-
             const tbody = document.getElementById('member-table-body');
-            const search = document.getElementById('search-input') ? document.getElementById('search-input').value.toLowerCase() : '';
-            const genFilter = document.getElementById('filter-generation') ? document.getElementById('filter-generation').value : '';
-            const statusFilter = document.getElementById('filter-status') ? document.getElementById('filter-status').value : '';
-            const ancestorFilter = document.getElementById('filter-ancestor') ? document.getElementById('filter-ancestor').value : '';
-            const genderFilter = document.getElementById('filter-gender') ? document.getElementById('filter-gender').value : '';
-            const branchTypeFilter = document.getElementById('filter-branch-type') ? document.getElementById('filter-branch-type').value : '';
-
             if (!tbody) return;
+
+            const searchInput = document.getElementById('search-input');
+            const genFilterElem = document.getElementById('filter-generation');
+            const statusFilterElem = document.getElementById('filter-status');
+            const ancestorFilterElem = document.getElementById('filter-ancestor');
+            const genderFilterElem = document.getElementById('filter-gender');
+            const branchTypeFilterElem = document.getElementById('filter-branch-type');
+
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
+            const genFilter = genFilterElem ? genFilterElem.value : '';
+            const statusFilter = statusFilterElem ? statusFilterElem.value : '';
+            const ancestorFilter = ancestorFilterElem ? ancestorFilterElem.value : '';
+            const genderFilter = genderFilterElem ? genderFilterElem.value : '';
+            const branchTypeFilter = branchTypeFilterElem ? branchTypeFilterElem.value : '';
+
             tbody.innerHTML = '';
 
             let allowedDescendants = null;
-            if (ancestorFilter) {
+            if (ancestorFilter && typeof getAllDescendantIds === 'function') {
                 allowedDescendants = getAllDescendantIds(ancestorFilter);
                 allowedDescendants.add(ancestorFilter);
             }
@@ -1259,9 +1266,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 const matchGen = !genFilter || m.generation == genFilter;
                 const matchStatus = !statusFilter || (statusFilter === 'living' ? m.status === 'Còn sống' : m.status === 'Đã mất');
                 
-                // Lọc con cháu nhưng loại bỏ chính cụ gốc (ancestorFilter)
                 const matchAncestor = !ancestorFilter || ((allowedDescendants && allowedDescendants.has(m.id)) && m.id !== ancestorFilter);
-                
                 const matchGender = !genderFilter || m.gender === genderFilter;
 
                 let isInternal = (m.generation === 1) || (m.fatherId || m.motherId) || (!m.spouseIds || m.spouseIds.length === 0);
@@ -1275,7 +1280,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Sắp xếp: Thế hệ -> Nhánh gia đình -> Người huyết thống trước, vợ/chồng (dâu/rể) đứng liền ngay sau
+            // Sắp xếp: Thế hệ -> Huyết thống trước, vợ/chồng (dâu/rể) đứng liền ngay sau
             filtered.sort((a, b) => {
                 if (a.generation !== b.generation) return a.generation - b.generation;
 
@@ -1313,7 +1318,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
             }
 
             filtered.forEach((m, index) => {
-                const parentNames = getParentNamesDisplay(m);
+                const parentNames = typeof getParentNamesDisplay === 'function' ? getParentNamesDisplay(m) : '---';
                 
                 let allSpouseIds = new Set(m.spouseIds || []);
                 members.forEach(other => {
@@ -1324,7 +1329,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 
                 const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear || '-'}`;
 
-                const check = checkUpcomingMemberAnniversary(m);
+                const check = typeof checkUpcomingMemberAnniversary === 'function' ? checkUpcomingMemberAnniversary(m) : { isUpcoming: false };
                 const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';
 
                 const tr = document.createElement('tr');
