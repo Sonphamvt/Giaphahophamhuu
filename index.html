@@ -713,6 +713,131 @@
         }
 
         // 2. HÀM RENDER BẢNG HIỂN THỊ CHUẨN XÁC
+        let members = [];
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyl7vmUzryjRlsIHBu9IRbz1qn3d2VLNRcKk12ukFAWa7zbyptcrUanZb9c9CS_Kzib/exec";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch(WEB_APP_URL)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Đã tải thành công dữ liệu từ Google Sheets:", data);
+                    members = data;
+                    migrateSpouseData();
+                    recalculateAllGenerations();
+                    assignScientificGenealogyCodes(); // TỰ ĐỘNG TÍNH MÃ KHOA HỌC CHO TỪNG THÀNH VIÊN
+                    updateGenerationFilterOptions();
+                    updateAncestorFilterOptions();
+                    
+                    renderTree();
+                    renderTable();
+                    renderAnniversaries();
+                })
+                .catch(error => {
+                    console.error("Lỗi khi tải dữ liệu từ Google Sheets:", error);
+                    alert("Không thể tải dữ liệu từ Google Sheets.");
+                });
+        });
+
+        // HÀM HỖ TRỢ ĐỌC NĂM SINH
+        function parseYear(yearStr) {
+            if (!yearStr) return 9999;
+            const match = String(yearStr).match(/\d{4}/);
+            return match ? parseInt(match[0]) : 9999;
+        }
+
+        // HỆ THỐNG GÁN MÃ KHOA HỌC PHẢ HỆ TỰ ĐỘNG (Ví dụ: 1, 2, 2.1, 2.2, 3.1.1...)
+        let memberCodeMap = new Map();
+
+        function assignScientificGenealogyCodes() {
+            memberCodeMap.clear();
+            let roots = members.filter(m => !m.fatherId && !m.motherId);
+            
+            // Sắp xếp các cụ tổ theo orderIndex hoặc năm sinh
+            roots.sort((a, b) => {
+                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
+                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return parseYear(a.birthYear) - parseYear(b.birthYear);
+            });
+
+            roots.forEach((root, idx) => {
+                let code = String(idx + 1);
+                memberCodeMap.set(root.id, code);
+                assignChildCodes(root.id, code);
+            });
+
+            // Gán mã cho các thành viên bị đứt quãng liên kết (nếu có)
+            members.forEach(m => {
+                if (!memberCodeMap.has(m.id)) {
+                    memberCodeMap.set(m.id, "X");
+                }
+            });
+        }
+
+        function assignChildCodes(parentId, parentCode) {
+            let children = members.filter(m => m.fatherId === parentId || m.motherId === parentId);
+            
+            // Sắp xếp con cái theo orderIndex hoặc năm sinh
+            children.sort((a, b) => {
+                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
+                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return parseYear(a.birthYear) - parseYear(b.birthYear);
+            });
+
+            children.forEach((child, idx) => {
+                let childCode = `${parentCode}.${idx + 1}`;
+                memberCodeMap.set(child.id, childCode);
+                
+                // Đồng thời gán mã cho Vợ/Chồng của người con này để hiển thị liền mạch
+                let spouseIds = new Set(child.spouseIds || []);
+                members.forEach(other => {
+                    if ((other.spouseIds || []).includes(child.id)) spouseIds.add(other.id);
+                });
+                spouseIds.forEach(sId => {
+                    if (!memberCodeMap.has(sId)) {
+                        memberCodeMap.set(sId, `${childCode} (Phối ngẫu)`);
+                    }
+                });
+
+                assignChildCodes(child.id, childCode);
+            });
+        }
+
+        // HÀM LẤY CON CHÁU (BAO GỒM CẢ DÂU/RỂ)
+        function getAllDescendantIds(ancestorId) {
+            let descendantSet = new Set();
+            let queue = [ancestorId];
+
+            while (queue.length > 0) {
+                let currentId = queue.shift();
+                let children = members.filter(m => m.fatherId === currentId || m.motherId === currentId);
+                
+                children.forEach(c => {
+                    if (!descendantSet.has(c.id)) {
+                        descendantSet.add(c.id);
+                        queue.push(c.id);
+                    }
+                });
+            }
+
+            let spousesToAdd = new Set();
+            descendantSet.forEach(descId => {
+                const person = members.find(m => m.id === descId);
+                if (person) {
+                    let spouseIds = new Set(person.spouseIds || []);
+                    members.forEach(other => {
+                        if ((other.spouseIds || []).includes(person.id)) spouseIds.add(other.id);
+                    });
+                    spouseIds.forEach(sId => spousesToAdd.add(sId));
+                }
+            });
+
+            spousesToAdd.forEach(sId => descendantSet.add(sId));
+            return descendantSet;
+        }
+
+        // HÀM RENDER BẢNG HIỂN THỊ CHUẨN XÁC THEO MÃ HỆ THỐNG KHOA HỌC
         function renderTable() {
             const tbody = document.getElementById('member-table-body');
             if (!tbody) return;
@@ -739,7 +864,7 @@
                 allowedDescendants.add(ancestorFilter);
             }
 
-            // A. Lọc danh sách thành viên
+            // 1. Lọc danh sách thành viên
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
@@ -759,48 +884,16 @@
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // B. Xây dựng Tọa độ Đường dẫn Huyết thống (Ancestral Path) cho từng thành viên
-            let nodePathMap = new Map();
+            // 2. Cập nhật lại mã phả hệ mới nhất
+            assignScientificGenealogyCodes();
 
-            function buildPaths(personId, currentPath) {
-                if (nodePathMap.has(personId)) return;
-                nodePathMap.set(personId, currentPath);
-
-                let children = members.filter(m => m.fatherId === personId || m.motherId === personId);
-                children.sort((a, b) => {
-                    const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                    const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                    if (orderA !== orderB) return orderA - orderB;
-                    return parseYear(a.birthYear) - parseYear(b.birthYear);
-                });
-
-                children.forEach((child, idx) => {
-                    buildPaths(child.id, [...currentPath, idx]);
-                });
-            }
-
-            let roots = members.filter(m => !m.fatherId && !m.motherId);
-            roots.sort((a, b) => {
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
-                return parseYear(a.birthYear) - parseYear(b.birthYear);
-            });
-
-            roots.forEach((root, idx) => {
-                buildPaths(root.id, [idx]);
-            });
-
-            // C. SẮP XẾP BẢNG THEO ĐÚNG THỨ TỰ UY TIÊN TỰ NHIÊN CỦA DÒNG HỌ:
-            // 1. Ưu tiên 1: Đời F (F1 -> F2 -> F3 ... F8)
-            // 2. Ưu tiên 2 (Cùng đời F): So sánh Tọa độ Đường dẫn Huyết thống (Nhánh Anh Cả -> Nhánh Em)
-            // 3. Ưu tiên 3: Chồng đứng trước, Vợ đứng liền ngay sau
+            // 3. SẮP XẾP BẢNG DỰA TRÊN THỨ TỰ MÃ HỆ THỐNG VÀ ĐỜI F
             filtered.sort((a, b) => {
                 const genA = a.generation || 1;
                 const genB = b.generation || 1;
-                if (genA !== genB) return genA - genB; // Khác đời: Đời thấp đứng trước
+                if (genA !== genB) return genA - genB; // Đời nhỏ lên trên
 
-                // Lấy ID người đại diện Nam/Gốc
+                // Lấy ID gốc (Nam/Chính) để gom cặp vợ chồng
                 let anchorA = a.id;
                 if (a.gender !== 'Nam') {
                     let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(a.id));
@@ -819,15 +912,17 @@
                     return 0;
                 }
 
-                // So sánh đường dẫn nhánh gia phả
-                const pathA = nodePathMap.get(anchorA) || [];
-                const pathB = nodePathMap.get(anchorB) || [];
+                // Sắp xếp theo mã phả hệ khoa học (chuỗi số 1, 1.1, 1.2, 2...)
+                const codeA = memberCodeMap.get(anchorA) || "999";
+                const codeB = memberCodeMap.get(anchorB) || "999";
+                
+                const partsA = codeA.split('.').map(Number);
+                const partsB = codeB.split('.').map(Number);
 
-                const minLen = Math.min(pathA.length, pathB.length);
-                for (let i = 0; i < minLen; i++) {
-                    if (pathA[i] !== pathB[i]) {
-                        return pathA[i] - pathB[i];
-                    }
+                for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+                    let valA = partsA[i] !== undefined ? partsA[i] : 0;
+                    let valB = partsB[i] !== undefined ? partsB[i] : 0;
+                    if (valA !== valB) return valA - valB;
                 }
 
                 const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
@@ -837,7 +932,7 @@
                 return parseYear(a.birthYear) - parseYear(b.birthYear);
             });
 
-            // D. Ghép cặp Vợ/Chồng để Vợ luôn đứng sát ngay sau Chồng
+            // 4. Ghép cặp Vợ/Chồng đứng liền nhau
             let finalOrderedList = [];
             let addedTableIds = new Set();
 
@@ -866,7 +961,7 @@
                 return;
             }
 
-            // E. Hiển thị dữ liệu ra bảng HTML
+            // 5. Render ra giao diện bảng
             finalOrderedList.forEach((m, index) => {
                 const parentNames = typeof getParentNamesDisplay === 'function' ? getParentNamesDisplay(m) : '---';
                 
@@ -878,6 +973,7 @@
                 const spouseNames = spouses.length > 0 ? spouses.map(s => s.name).join(', ') : '-';
                 
                 const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear || '-'}`;
+                const codeLabel = memberCodeMap.get(m.id) || (index + 1);
 
                 const check = typeof checkUpcomingMemberAnniversary === 'function' ? checkUpcomingMemberAnniversary(m) : { isUpcoming: false };
                 const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';
@@ -885,7 +981,7 @@
                 const tr = document.createElement('tr');
                 tr.className = `hover:bg-stone-50 transition ${highlightBg}`;
                 tr.innerHTML = `
-                    <td class="p-3 text-center text-stone-500 font-semibold">${index + 1}</td>
+                    <td class="p-3 text-center text-stone-600 font-bold text-xs" title="Mã thứ tự phả hệ khoa học">${codeLabel}</td>
                     <td class="p-3 font-semibold text-stone-800 flex items-center space-x-2">
                         ${m.avatar ? `<img src="${m.avatar}" class="w-8 h-8 rounded-full object-cover border border-stone-300">` : `<div class="w-8 h-8 rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div>`}
                         <button onclick="showDetail('${m.id}')" class="text-crimson hover:underline">${m.name}</button>
@@ -906,86 +1002,40 @@
             });
         }
 
-        // 3. ĐỒNG BỘ Ô CHỌN LỌC NHÁNH
+        // HÀM ĐỒNG BỘ Ô CHỌN LỌC NHÁNH THEO MÃ KHOA HỌC
         function updateAncestorFilterOptions() {
             const ancestorSelect = document.getElementById('filter-ancestor');
             if (!ancestorSelect) return;
             const currentValue = ancestorSelect.value;
 
+            assignScientificGenealogyCodes();
             let sortedMembers = [...members];
-            let nodePathMap = new Map();
-
-            function buildPaths(personId, currentPath) {
-                if (nodePathMap.has(personId)) return;
-                nodePathMap.set(personId, currentPath);
-
-                let children = members.filter(m => m.fatherId === personId || m.motherId === personId);
-                children.sort((a, b) => {
-                    const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                    const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                    if (orderA !== orderB) return orderA - orderB;
-                    return parseYear(a.birthYear) - parseYear(b.birthYear);
-                });
-
-                children.forEach((child, idx) => {
-                    buildPaths(child.id, [...currentPath, idx]);
-                });
-            }
-
-            let roots = members.filter(m => !m.fatherId && !m.motherId);
-            roots.sort((a, b) => {
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
-                return parseYear(a.birthYear) - parseYear(b.birthYear);
-            });
-
-            roots.forEach((root, idx) => buildPaths(root.id, [idx]));
 
             sortedMembers.sort((a, b) => {
                 const genA = a.generation || 1;
                 const genB = b.generation || 1;
                 if (genA !== genB) return genA - genB;
 
-                let anchorA = a.id;
-                if (a.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(a.id));
-                    if (husband) anchorA = husband.id;
+                const codeA = memberCodeMap.get(a.id) || "999";
+                const codeB = memberCodeMap.get(b.id) || "999";
+                
+                const partsA = String(codeA).split('.').map(Number);
+                const partsB = String(codeB).split('.').map(Number);
+
+                for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+                    let valA = partsA[i] !== undefined ? partsA[i] : 0;
+                    let valB = partsB[i] !== undefined ? partsB[i] : 0;
+                    if (valA !== valB) return valA - valB;
                 }
-
-                let anchorB = b.id;
-                if (b.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(b.id));
-                    if (husband) anchorB = husband.id;
-                }
-
-                if (anchorA === anchorB) {
-                    if (a.gender === 'Nam') return -1;
-                    if (b.gender === 'Nam') return 1;
-                    return 0;
-                }
-
-                const pathA = nodePathMap.get(anchorA) || [];
-                const pathB = nodePathMap.get(anchorB) || [];
-
-                const minLen = Math.min(pathA.length, pathB.length);
-                for (let i = 0; i < minLen; i++) {
-                    if (pathA[i] !== pathB[i]) {
-                        return pathA[i] - pathB[i];
-                    }
-                }
-
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && orderB !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
 
                 return parseYear(a.birthYear) - parseYear(b.birthYear);
             });
 
             ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>';
             sortedMembers.forEach(m => {
+                const codeLabel = memberCodeMap.get(m.id) ? `[${memberCodeMap.get(m.id)}]` : '';
                 const genLabel = m.generation ? `(Đời F${m.generation})` : '';
-                ancestorSelect.innerHTML += `<option value="${m.id}">Con cháu của: ${m.name} ${genLabel}</option>`;
+                ancestorSelect.innerHTML += `<option value="${m.id}">${codeLabel} Con cháu của: ${m.name} ${genLabel}</option>`;
             });
             ancestorSelect.value = currentValue;
         }
