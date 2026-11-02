@@ -1315,13 +1315,12 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Xây dựng danh sách sắp xếp theo đúng cây gia phả: Nhánh anh cả trước em sau, chồng luôn trước vợ ngay sau
+            // Xây dựng danh sách sắp xếp theo đúng cây gia phả chuẩn: Nhánh anh cả trước em sau, chồng luôn đứng trước vợ ngay sau
             let orderedFiltered = [];
 
             function addPersonAndSpouses(person) {
                 if (!person || orderedFiltered.some(m => m.id === person.id)) return;
 
-                // Đảm bảo nếu person là vợ/nữ và có chồng trong filtered, ta đưa chồng lên trước
                 let mainPerson = person;
                 if (person.gender !== 'Nam') {
                     let husband = filtered.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(person.id));
@@ -1334,7 +1333,6 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                     orderedFiltered.push(mainPerson);
                 }
 
-                // Tìm tất cả vợ/chồng của mainPerson có trong filtered để xếp liền ngay sau
                 let spouseIds = new Set(mainPerson.spouseIds || []);
                 filtered.forEach(other => {
                     if ((other.spouseIds || []).includes(mainPerson.id)) spouseIds.add(other.id);
@@ -1358,7 +1356,6 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                     addPersonAndSpouses(person);
                 }
 
-                // Tìm các con trực hệ và sắp xếp theo thứ tự (orderIndex) / năm sinh (anh trước em sau)
                 let children = filtered.filter(m => m.fatherId === personId || m.motherId === personId);
                 children.sort((a, b) => {
                     const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
@@ -1372,7 +1369,6 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 });
             }
 
-            // Lấy các gốc (roots) trong danh sách filtered
             let currentRoots = filtered.filter(m => (!m.fatherId && !m.motherId) || !filtered.some(p => p.id === m.fatherId || p.id === m.motherId));
             currentRoots.sort((a, b) => {
                 const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
@@ -1385,7 +1381,6 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 traverseBranch(r.id);
             });
 
-            // Bổ sung các thành viên rời rạc (nếu có)
             filtered.forEach(m => {
                 if (!orderedFiltered.some(om => om.id === m.id)) {
                     addPersonAndSpouses(m);
