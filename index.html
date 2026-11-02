@@ -1283,7 +1283,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
 
             const search = searchInput ? searchInput.value.toLowerCase() : '';
             const genFilter = genFilterElem ? genFilterElem.value : '';
-            const statusFilter = statusFilterElem ? statusFilterElem.value : '';
+            const statusFilter = statusFilterElem ? statusFilter.value : '';
             const ancestorFilter = ancestorFilterElem ? ancestorFilterElem.value : '';
             const genderFilter = genderFilterElem ? genderFilterElem.value : '';
             const branchTypeFilter = branchTypeFilterElem ? branchTypeFilterElem.value : '';
@@ -1296,7 +1296,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 allowedDescendants.add(ancestorFilter);
             }
 
-            // 1. Lọc danh sách theo các tiêu chí tìm kiếm và bộ lọc
+            // 1. Lọc danh sách thành viên
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
@@ -1316,16 +1316,14 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // 2. Tạo bản đồ thứ tự cây gia phả chuẩn (Nhánh anh đi trước, nhánh em đi sau)
-            let treeSequence = [];
-            let visitedSequence = new Set();
+            // 2. Tạo bản đồ thứ tự các anh chị em trong toàn bộ cây (để biết ai là anh, ai là em trong cùng một gia đình hoặc nhánh)
+            let familyOrderMap = new Map();
+            let globalIndex = 0;
 
-            function buildSequence(personId) {
-                if (visitedSequence.has(personId)) return;
-                visitedSequence.add(personId);
-                treeSequence.push(personId);
+            function assignFamilyOrder(personId) {
+                if (familyOrderMap.has(personId)) return;
+                familyOrderMap.set(personId, globalIndex++);
 
-                // Lấy con cái và sắp xếp theo orderIndex hoặc năm sinh
                 let children = members.filter(m => m.fatherId === personId || m.motherId === personId);
                 children.sort((a, b) => {
                     const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
@@ -1334,7 +1332,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                     return parseYear(a.birthYear) - parseYear(b.birthYear);
                 });
 
-                children.forEach(c => buildSequence(c.id));
+                children.forEach(c => assignFamilyOrder(c.id));
             }
 
             let roots = members.filter(m => !m.fatherId && !m.motherId);
@@ -1344,19 +1342,17 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 if (orderA !== orderB) return orderA - orderB;
                 return parseYear(a.birthYear) - parseYear(b.birthYear);
             });
+            roots.forEach(r => assignFamilyOrder(r.id));
 
-            roots.forEach(r => buildSequence(r.id));
-
-            // 3. Sắp xếp danh sách thành viên theo đúng yêu cầu:
-            // - Ưu tiên 1: Đời F (F1 lên trên, F2, F3... xuống dưới)
-            // - Ưu tiên 2: Cùng đời thì xếp theo Nhánh dòng họ (treeSequence) và Thứ tự anh chị em
-            // - Ưu tiên 3: Chồng đứng trước, Vợ đứng liền ngay sau
+            // 3. SẮP XẾP CHUẨN XÁC THEO YÊU CẦU CỦA ÔNG:
+            // - Ưu tiên 1: Đời F (F1 lên trên cùng, F2, F3... nằm bên dưới theo từng tầng thế hệ).
+            // - Ưu tiên 2: Trong cùng một đời F, phân cấp theo Nhánh và Thứ tự anh/chị/em (Anh lớn/Nhánh trưởng đi trước, Em/Nhánh thứ đi sau).
             filtered.sort((a, b) => {
                 const genA = a.generation || 1;
                 const genB = b.generation || 1;
-                if (genA !== genB) return genA - genB;
+                if (genA !== genB) return genA - genB; // Khác đời: Đời nhỏ đứng trước
 
-                // Xác định định danh gốc của cặp vợ chồng để gom chung
+                // Lấy định danh gốc của cặp vợ chồng
                 let anchorA = a.id;
                 if (a.gender !== 'Nam') {
                     let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(a.id));
@@ -1369,19 +1365,19 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                     if (husband) anchorB = husband.id;
                 }
 
-                // Nếu chung một cặp vợ chồng -> Chồng trước, vợ sau
+                // Cùng một cặp vợ chồng -> Chồng trước, vợ sau
                 if (anchorA === anchorB) {
                     if (a.gender === 'Nam') return -1;
                     if (b.gender === 'Nam') return 1;
                     return 0;
                 }
 
-                // So sánh vị trí trong nhánh dòng họ
-                const posA = treeSequence.indexOf(anchorA);
-                const posB = treeSequence.indexOf(anchorB);
-                if (posA !== -1 && posB !== -1) return posA - posB;
+                // Cùng đời F: Sắp xếp theo thứ tự nhánh và gia đình đã được định tuyến
+                const posA = familyOrderMap.has(anchorA) ? familyOrderMap.get(anchorA) : 9999;
+                const posB = familyOrderMap.has(anchorB) ? familyOrderMap.get(anchorB) : 9999;
+                if (posA !== posB) return posA - posB;
 
-                // Dự phòng theo thứ tự và năm sinh
+                // Dự phòng theo orderIndex và năm sinh
                 const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
                 const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
                 if (orderA !== orderB) return orderA - orderB;
@@ -1389,18 +1385,16 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return parseYear(a.birthYear) - parseYear(b.birthYear);
             });
 
-            // 4. Xử lý hiển thị dâu/rể (vợ) luôn đứng sát ngay sau chồng trong danh sách lọc
+            // 4. Gom cặp Vợ / Chồng để dâu/rể luôn đứng liền ngay sau chồng
             let finalOrderedList = [];
             let addedTableIds = new Set();
 
             filtered.forEach(m => {
                 if (addedTableIds.has(m.id)) return;
 
-                // Nếu là Nam (hoặc không có vợ), đẩy vào danh sách trước
                 finalOrderedList.push(m);
                 addedTableIds.add(m.id);
 
-                // Tìm vợ/chồng đi cùng có trong danh sách filtered
                 let spouseIds = new Set(m.spouseIds || []);
                 members.forEach(other => {
                     if ((other.spouseIds || []).includes(m.id)) spouseIds.add(other.id);
@@ -1420,7 +1414,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return;
             }
 
-            // 5. Render ra các dòng trong bảng
+            // 5. Render ra bảng
             finalOrderedList.forEach((m, index) => {
                 const parentNames = typeof getParentNamesDisplay === 'function' ? getParentNamesDisplay(m) : '---';
                 
