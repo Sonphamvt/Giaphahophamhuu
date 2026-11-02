@@ -1315,7 +1315,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Xây dựng danh sách sắp xếp theo đúng cây gia phả: Nhánh trưởng trước, nhánh thứ sau (con anh trước con em), chồng luôn đứng trước vợ ngay sau
+            // Xây dựng danh sách sắp xếp chuẩn gia phả: Nhánh anh cả -> các con cháu anh cả -> rồi mới tới nhánh em
             let orderedFiltered = [];
 
             function addPersonAndSpouses(person) {
