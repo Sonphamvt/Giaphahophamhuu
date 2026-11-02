@@ -111,7 +111,7 @@
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-wrap justify-between items-center text-sm text-amber-900">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-circle-info text-amber-700"></i>
-                    <span>Bấm nút [+] [-] trên thẻ để mở/thu gọn nhánh con cháu.</span>
+                    <span>Kéo thả để di chuyển, cuộn chuột để thu phóng. Bấm nút [+] [-] trên thẻ để mở/thu gọn nhánh con cháu.</span>
                 </div>
                 
                 <!-- BỘ LỌC CHẾ ĐỘ XEM NỘI TỘC / NGOẠI TỘC -->
@@ -643,67 +643,97 @@
             return match ? parseInt(match[0]) : 9999;
         }
 
-        /* --- BẢNG TRA CỨU ÂM LỊCH SANG DƯƠNG LỊCH CHUẨN XÁC NĂM 2026 --- */
-    // Bảng tra cứu mồng 1 Âm lịch sang ngày Dương lịch chuẩn xác 2026 - 2027
-// Bảng tra cứu chuẩn xác 2026 - 2027
-const lunarMonthStart2026 = {
-    1: { year: 2026, m: 2, d: 17 },
-    2: { year: 2026, m: 3, d: 19 },
-    3: { year: 2026, m: 4, d: 17 },
-    4: { year: 2026, m: 5, d: 17 },
-    5: { year: 2026, m: 6, d: 15 },
-    6: { year: 2026, m: 7, d: 15 },
-    7: { year: 2026, m: 8, d: 13 },
-    8: { year: 2026, m: 9, d: 12 },
-    9: { year: 2026, m: 10, d: 10 },
-    10: { year: 2026, m: 11, d: 9 },
-    11: { year: 2026, m: 12, d: 9 },
-    12: { year: 2027, m: 1, d: 28 }
-};
+        /* --- BẢNG TRA CỨU ÂM LỊCH SANG DƯƠNG LỊCH CHUẨN XÁC NĂM 2026 - 2027 --- */
+        const lunarMonthStart2026 = {
+            1: { year: 2026, m: 2, d: 17 },
+            2: { year: 2026, m: 3, d: 19 },
+            3: { year: 2026, m: 4, d: 17 },
+            4: { year: 2026, m: 5, d: 17 },
+            5: { year: 2026, m: 6, d: 15 },
+            6: { year: 2026, m: 7, d: 15 },
+            7: { year: 2026, m: 8, d: 13 },
+            8: { year: 2026, m: 9, d: 12 },
+            9: { year: 2026, m: 10, d: 10 },
+            10: { year: 2026, m: 11, d: 9 },
+            11: { year: 2026, m: 12, d: 9 },
+            12: { year: 2027, m: 1, d: 28 }
+        };
 
-function convertLunarToSolar(lunarMonth, lunarDay) {
-    const start = lunarMonthStart2026[lunarMonth];
-    if (!start) return null;
+        function convertLunarToSolar(lunarMonth, lunarDay) {
+            const start = lunarMonthStart2026[lunarMonth];
+            if (!start) return null;
 
-    let targetSolar = new Date(start.year, start.m - 1, start.d);
-    targetSolar.setDate(targetSolar.getDate() + (lunarDay - 1));
-    return targetSolar; // Trả về trực tiếp đối tượng Date chuẩn
-}
-
-function checkUpcomingAnniversary(deathDateStr) {
-    if (!deathDateStr) return { isUpcoming: false };
-    const match = String(deathDateStr).match(/(\d{1,2})\/(\d{1,2})/);
-    if (match) {
-        const lunarDay = parseInt(match[1]);
-        const lunarMonth = parseInt(match[2]);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const solarDate = convertLunarToSolar(lunarMonth, lunarDay);
-        if (!solarDate) return { isUpcoming: false };
-
-        solarDate.setHours(0, 0, 0, 0);
-        const diffTime = solarDate.getTime() - today.getTime();
-        const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-        if (daysLeft >= 0 && daysLeft <= 7) {
-            return { isUpcoming: true, type: 'giỗ', daysLeft: daysLeft };
+            let targetSolar = new Date(start.year, start.m - 1, start.d);
+            targetSolar.setDate(targetSolar.getDate() + (lunarDay - 1));
+            return targetSolar;
         }
-    }
-    return { isUpcoming: false };
-}
 
-        function calculateDaysUntil(todayObj, targetM, targetD) {
-            const thisYear = todayObj.getFullYear();
-            let targetDate = new Date(thisYear, targetM - 1, targetD, 0, 0, 0, 0);
-            
-            if (targetDate < todayObj) {
-                targetDate.setFullYear(thisYear + 1);
+        function checkUpcomingAnniversary(deathDateStr) {
+            if (!deathDateStr) return { isUpcoming: false };
+            const match = String(deathDateStr).match(/(\d{1,2})\/(\d{1,2})/);
+            if (match) {
+                const lunarDay = parseInt(match[1]);
+                const lunarMonth = parseInt(match[2]);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const solarDate = convertLunarToSolar(lunarMonth, lunarDay);
+                if (!solarDate) return { isUpcoming: false };
+
+                solarDate.setHours(0, 0, 0, 0);
+                const diffTime = solarDate.getTime() - today.getTime();
+                const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                if (daysLeft >= 0 && daysLeft <= 7) {
+                    return { isUpcoming: true, type: 'giỗ', daysLeft: daysLeft };
+                }
             }
-            
-            const diffTime = targetDate.getTime() - todayObj.getTime();
-            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+            return { isUpcoming: false };
+        }
+
+        function checkUpcomingMemberAnniversary(member) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (member.status === 'Đã mất') {
+                if (!member.deathDate) return { isUpcoming: false };
+                const match = String(member.deathDate).match(/(\d{1,2})\/(\d{1,2})/);
+                if (match) {
+                    const lunarDay = parseInt(match[1]);
+                    const lunarMonth = parseInt(match[2]);
+
+                    const solarDate = convertLunarToSolar(lunarMonth, lunarDay);
+                    if (!solarDate) return { isUpcoming: false };
+
+                    solarDate.setHours(0, 0, 0, 0);
+                    const diffTime = solarDate.getTime() - today.getTime();
+                    const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (daysLeft >= 0 && daysLeft <= 7) {
+                        return { isUpcoming: true, type: 'giỗ', daysLeft: daysLeft };
+                    }
+                }
+            } else {
+                if (!member.birthYear) return { isUpcoming: false };
+                const match = String(member.birthYear).match(/(\d{1,2})\/(\d{1,2})/);
+                if (match) {
+                    const birthDay = parseInt(match[1]);
+                    const birthMonth = parseInt(match[2]);
+
+                    let targetDate = new Date(today.getFullYear(), birthMonth - 1, birthDay, 0, 0, 0, 0);
+                    if (targetDate < today) {
+                        targetDate.setFullYear(today.getFullYear() + 1);
+                    }
+                    const diffTime = targetDate.getTime() - today.getTime();
+                    const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (daysLeft >= 0 && daysLeft <= 7) {
+                        return { isUpcoming: true, type: 'sinh nhật', daysLeft: daysLeft };
+                    }
+                }
+            }
+            return { isUpcoming: false };
         }
 
         function getParentNamesDisplay(member) {
@@ -729,7 +759,6 @@ function checkUpcomingAnniversary(deathDateStr) {
 
             const spouseCount = (nodeData.spouseIds || []).length;
             if (spouseCount > 0) {
-                // Mỗi vợ/chồng dời sang phải 170px và rộng 80px mỗi bên từ tâm của họ
                 rightEdge = 170 + ((spouseCount - 1) * 170) + 80;
             }
 
@@ -848,13 +877,11 @@ function checkUpcomingAnniversary(deathDateStr) {
             });
             svg.call(zoomHandler);
 
-            // BƯỚC 1: ĐẶT KHOẢNG CÁCH CƠ BẢN D3 TREE
             const treeLayout = d3.tree()
                 .nodeSize([200, 230]);
 
             treeLayout(root);
 
-            // BƯỚC 2: HẬU XỬ LÝ (POST-PROCESSING) - ĐIỀU CHỈNH TỌA ĐỘ X ĐỂ KHÔNG BAO GIỜ BỊ ĐÈ LÊN NHAU
             const nodesByDepth = {};
             root.descendants().filter(d => !d.data.isVirtual).forEach(d => {
                 if (!nodesByDepth[d.depth]) nodesByDepth[d.depth] = [];
@@ -872,16 +899,13 @@ function checkUpcomingAnniversary(deathDateStr) {
                     const boxCurr = getNodeBoundingBox(currNode.data, viewMode);
                     const boxNext = getNodeBoundingBox(nextNode.data, viewMode);
 
-                    // Mép phải thực tế của nút hiện tại
                     const rightEdgeCurr = currNode.x + boxCurr.right;
-                    // Mép trái thực tế của nút tiếp theo
                     const leftEdgeNext = nextNode.x + boxNext.left;
 
-                    const safeGap = 45; // Khoảng hở an toàn tối thiểu giữa 2 nhóm thẻ
+                    const safeGap = 45;
 
                     if (leftEdgeNext < rightEdgeCurr + safeGap) {
                         const shiftDistance = (rightEdgeCurr + safeGap) - leftEdgeNext;
-                        // Dịch chuyển nút tiếp theo và tất cả các nút bên phải nó sang phải
                         for (let j = i + 1; j < rowNodes.length; j++) {
                             rowNodes[j].x += shiftDistance;
                         }
@@ -1508,7 +1532,7 @@ function checkUpcomingAnniversary(deathDateStr) {
         function openAddModal() {
             let pwd = prompt("Nhập mật khẩu quản trị để thêm thành viên:");
             if (pwd !== ADMIN_PASSWORD) {
-                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này. Liên hệ 0972600567!");
+                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này.");
                 return;
             }
 
