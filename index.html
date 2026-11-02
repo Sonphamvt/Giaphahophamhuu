@@ -154,9 +154,27 @@
                     <select id="filter-ancestor" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
                         <option value="">-- Tất cả các nhánh (Con cháu của...) --</option>
                     </select>
+
+                    <!-- Ô LỌC THẾ HỆ -->
                     <select id="filter-generation" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
                         <option value="">-- Tất cả thế hệ --</option>
                     </select>
+
+                    <!-- Ô LỌC GIỚI TÍNH (MỚI THÊM) -->
+                    <select id="filter-gender" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
+                        <option value="">-- Giới tính --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+
+                    <!-- Ô LỌC NỘI TỘC / NGOẠI TỘC (MỚI THÊM) -->
+                    <select id="filter-branch-type" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
+                        <option value="">-- Nội / Ngoại tộc --</option>
+                        <option value="internal">Chỉ Nội Tộc (Huyết thống)</option>
+                        <option value="external">Ngoại Tộc (Dâu / Rể)</option>
+                    </select>
+
+                    <!-- Ô LỌC TRẠNG THÁI -->
                     <select id="filter-status" onchange="renderTable()" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-crimson bg-white">
                         <option value="">-- Trạng thái --</option>
                         <option value="living">Còn sống</option>
@@ -1232,13 +1250,30 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 allowedDescendants.add(ancestorFilter);
             }
 
+            // Lấy giá trị từ 2 ô lọc mới
+            const genderFilter = document.getElementById('filter-gender') ? document.getElementById('filter-gender').value : '';
+            const branchTypeFilter = document.getElementById('filter-branch-type') ? document.getElementById('filter-branch-type').value : '';
+
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
                 const matchStatus = !statusFilter || (statusFilter === 'living' ? m.status === 'Còn sống' : m.status === 'Đã mất');
                 const matchAncestor = !ancestorFilter || (allowedDescendants && allowedDescendants.has(m.id));
+                
+                // Điều kiện lọc giới tính
+                const matchGender = !genderFilter || m.gender === genderFilter;
 
-                return matchSearch && matchGen && matchStatus && matchAncestor;
+                // Điều kiện lọc Nội tộc / Ngoại tộc (Nội tộc là người có huyết thống hoặc đời 1; Dâu/Rể là ngoại tộc)
+                let isInternal = (m.generation === 1) || (m.fatherId || m.motherId) || (!m.spouseIds || m.spouseIds.length === 0);
+                // Nếu thành viên có vợ/chồng nhưng không có bố/mẹ trong cây (hoặc được gắn vào dòng họ qua hôn nhân) thì xác định là dâu/rể
+                const isSpouseOnly = !m.fatherId && !m.motherId && m.spouseIds && m.spouseIds.length > 0 && m.generation > 1;
+                if (isSpouseOnly) isInternal = false;
+
+                const matchBranch = !branchTypeFilter || 
+                    (branchTypeFilter === 'internal' && isInternal) || 
+                    (branchTypeFilter === 'external' && !isInternal);
+
+                return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
             filtered.sort((a, b) => {
