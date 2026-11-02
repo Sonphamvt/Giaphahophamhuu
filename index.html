@@ -1296,6 +1296,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 allowedDescendants.add(ancestorFilter);
             }
 
+            // 1. Lọc danh sách theo các bộ lọc người dùng chọn
             const filtered = members.filter(m => {
                 const matchSearch = m.name.toLowerCase().includes(search) || (m.location && m.location.toLowerCase().includes(search));
                 const matchGen = !genFilter || m.generation == genFilter;
@@ -1315,22 +1316,61 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Lấy danh sách các nhánh gia phả chuẩn để định vị thứ tự dòng họ của Cha/Mẹ
-            let familyTreeOrder = [];
-            function buildTreeOrder(personId) {
-                if (familyTreeOrder.includes(personId)) return;
-                familyTreeOrder.push(personId);
+            // 2. Thuật toán duyệt cây gia phả chuẩn (Duyệt toàn bộ nhánh Anh Cả trước rồi mới sang nhánh Em)
+            let orderedFiltered = [];
+            let addedIds = new Set();
 
+            // Hàm hỗ trợ thêm người và Vợ/Chồng đứng liền ngay sau
+            function addPersonAndSpouse(person) {
+                if (!person || addedIds.has(person.id)) return;
+
+                // Nếu người này nằm trong danh sách lọc thì thêm vào
+                if (filtered.some(m => m.id === person.id)) {
+                    orderedFiltered.push(person);
+                    addedIds.add(person.id);
+                }
+
+                // Tìm Vợ/Chồng (Dâu/Rể) để xếp liền ngay sau
+                let spouseIds = new Set(person.spouseIds || []);
+                members.forEach(other => {
+                    if ((other.spouseIds || []).includes(person.id)) spouseIds.add(other.id);
+                });
+
+                spouseIds.forEach(sId => {
+                    const spouse = members.find(m => m.id === sId);
+                    if (spouse && !addedIds.has(spouse.id) && filtered.some(m => m.id === spouse.id)) {
+                        orderedFiltered.push(spouse);
+                        addedIds.add(spouse.id);
+                    }
+                });
+            }
+
+            // Hàm đệ quy duyệt từng nhánh dòng họ
+            function traverseTree(personId) {
+                const person = members.find(m => m.id === personId);
+                if (!person) return;
+
+                // Thêm người này và Vợ/Chồng
+                addPersonAndSpouse(person);
+
+                // Lấy tất cả con cái trực hệ
                 let children = members.filter(m => m.fatherId === personId || m.motherId === personId);
+                
+                // Sắp xếp con cái: Ưu tiên Thứ tự (orderIndex) -> Năm sinh
                 children.sort((a, b) => {
                     const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
                     const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
                     if (orderA !== orderB) return orderA - orderB;
                     return parseYear(a.birthYear) - parseYear(b.birthYear);
                 });
-                children.forEach(c => buildTreeOrder(c.id));
+
+                // Duyệt sâu vào từng con trai/con gái theo đúng thứ tự từ Anh/Chị Cả đến Em
+                children.forEach(child => {
+                    traverseTree(child.id);
+                });
             }
 
+            // Lấy danh sách Cụ Tổ (Root)
             let rootMembers = members.filter(m => !m.fatherId && !m.motherId);
             rootMembers.sort((a, b) => {
                 const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
@@ -1338,54 +1378,28 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 if (orderA !== orderB) return orderA - orderB;
                 return parseYear(a.birthYear) - parseYear(b.birthYear);
             });
-            rootMembers.forEach(r => buildTreeOrder(r.id));
 
-            // SẮP XẾP DANH SÁCH: Đời F cao xếp trên, đời F thấp xếp dưới; Trong cùng 1 đời thì xếp theo Nhánh Trưởng -> Nhánh Thứ, Chồng trước Vợ sau.
-            filtered.sort((a, b) => {
-                // 1. So sánh Thế hệ (Generation): F1 -> F2 -> F3 ...
-                const genA = a.generation || 1;
-                const genB = b.generation || 1;
-                if (genA !== genB) return genA - genB;
-
-                // Lấy ID người đại diện chính (Nếu là Vợ thì lấy ID của Chồng để đi kèm)
-                let anchorA = a.id;
-                if (a.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(a.id));
-                    if (husband) anchorA = husband.id;
-                }
-
-                let anchorB = b.id;
-                if (b.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(b.id));
-                    if (husband) anchorB = husband.id;
-                }
-
-                // 2. Nếu là cùng một cặp Vợ Chồng -> Chồng đứng trước, Vợ đứng sau
-                if (anchorA === anchorB) {
-                    if (a.gender === 'Nam') return -1;
-                    if (b.gender === 'Nam') return 1;
-                    return 0;
-                }
-
-                // 3. So sánh vị trí dòng họ theo nhánh của Cha/Mẹ hoặc bản thân trong cây gia phả
-                const posA = familyTreeOrder.indexOf(anchorA);
-                const posB = familyTreeOrder.indexOf(anchorB);
-                if (posA !== -1 && posB !== -1) return posA - posB;
-
-                // 4. Nếu không xác định được nhánh, xếp theo Thứ tự (orderIndex) hoặc Năm sinh
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
-
-                return parseYear(a.birthYear) - parseYear(b.birthYear);
+            // Bắt đầu duyệt từ Cụ Tổ gốc
+            rootMembers.forEach(root => {
+                traverseTree(root.id);
             });
 
-            if (filtered.length === 0) {
+            // Bổ sung các thành viên bị sót (nếu bị đứt gãy liên kết gia phả)
+            filtered.forEach(m => {
+                if (!addedIds.has(m.id)) {
+                    addPersonAndSpouse(m);
+                }
+            });
+
+            const finalFilteredList = orderedFiltered;
+
+            if (finalFilteredList.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-stone-500">Không tìm thấy thành viên nào phù hợp.</td></tr>`;
                 return;
             }
 
-            filtered.forEach((m, index) => {
+            // 3. Render ra bảng hiển thị
+            finalFilteredList.forEach((m, index) => {
                 const parentNames = typeof getParentNamesDisplay === 'function' ? getParentNamesDisplay(m) : '---';
                 
                 let allSpouseIds = new Set(m.spouseIds || []);
