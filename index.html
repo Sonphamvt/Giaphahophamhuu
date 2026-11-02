@@ -1270,7 +1270,7 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
         function zoomOut() { d3.select("#tree-svg").transition().call(zoomHandler.scaleBy, 0.8); }
         function resetZoom() { d3.select("#tree-svg").transition().call(zoomHandler.transform, d3.zoomIdentity.translate(0, 20).scale(0.85)); }
 
-        function renderTable() {
+       function renderTable() {
             const tbody = document.getElementById('member-table-body');
             if (!tbody) return;
 
@@ -1315,9 +1315,128 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Sắp xếp: Thế hệ -> Đảm bảo Vợ luôn đứng liền ngay sau Chồng
-            // Sắp xếp danh sách chuẩn theo thứ tự cây gia phả (Nhánh anh cả trước, em sau) và vợ đứng sau chồng
+            // Xây dựng danh sách sắp xếp theo đúng cây gia phả: Nhánh anh cả trước em sau, chồng luôn trước vợ ngay sau
             let orderedFiltered = [];
+
+            function addPersonAndSpouses(person) {
+                if (!person || orderedFiltered.some(m => m.id === person.id)) return;
+
+                // Đảm bảo nếu person là vợ/nữ và có chồng trong filtered, ta đưa chồng lên trước
+                let mainPerson = person;
+                if (person.gender !== 'Nam') {
+                    let husband = filtered.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(person.id));
+                    if (husband && filtered.some(m => m.id === husband.id)) {
+                        mainPerson = husband;
+                    }
+                }
+
+                if (!orderedFiltered.some(m => m.id === mainPerson.id)) {
+                    orderedFiltered.push(mainPerson);
+                }
+
+                // Tìm tất cả vợ/chồng của mainPerson có trong filtered để xếp liền ngay sau
+                let spouseIds = new Set(mainPerson.spouseIds || []);
+                filtered.forEach(other => {
+                    if ((other.spouseIds || []).includes(mainPerson.id)) spouseIds.add(other.id);
+                });
+
+                spouseIds.forEach(sId => {
+                    const spouse = filtered.find(m => m.id === sId);
+                    if (spouse && !orderedFiltered.some(m => m.id === spouse.id)) {
+                        orderedFiltered.push(spouse);
+                    }
+                });
+
+                if (person.id !== mainPerson.id && !orderedFiltered.some(m => m.id === person.id)) {
+                    orderedFiltered.push(person);
+                }
+            }
+
+            function traverseBranch(personId) {
+                const person = filtered.find(m => m.id === personId);
+                if (person) {
+                    addPersonAndSpouses(person);
+                }
+
+                // Tìm các con trực hệ và sắp xếp theo thứ tự (orderIndex) / năm sinh (anh trước em sau)
+                let children = filtered.filter(m => m.fatherId === personId || m.motherId === personId);
+                children.sort((a, b) => {
+                    const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
+                    const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return parseYear(a.birthYear) - parseYear(b.birthYear);
+                });
+
+                children.forEach(c => {
+                    traverseBranch(c.id);
+                });
+            }
+
+            // Lấy các gốc (roots) trong danh sách filtered
+            let currentRoots = filtered.filter(m => (!m.fatherId && !m.motherId) || !filtered.some(p => p.id === m.fatherId || p.id === m.motherId));
+            currentRoots.sort((a, b) => {
+                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
+                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return parseYear(a.birthYear) - parseYear(b.birthYear);
+            });
+
+            currentRoots.forEach(r => {
+                traverseBranch(r.id);
+            });
+
+            // Bổ sung các thành viên rời rạc (nếu có)
+            filtered.forEach(m => {
+                if (!orderedFiltered.some(om => om.id === m.id)) {
+                    addPersonAndSpouses(m);
+                }
+            });
+
+            const finalFilteredList = orderedFiltered;
+
+            if (finalFilteredList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-stone-500">Không tìm thấy thành viên nào phù hợp.</td></tr>`;
+                return;
+            }
+
+            finalFilteredList.forEach((m, index) => {
+                const parentNames = typeof getParentNamesDisplay === 'function' ? getParentNamesDisplay(m) : '---';
+                
+                let allSpouseIds = new Set(m.spouseIds || []);
+                members.forEach(other => {
+                    if ((other.spouseIds || []).includes(m.id)) allSpouseIds.add(other.id);
+                });
+                const spouses = Array.from(allSpouseIds).map(id => members.find(s => s.id === id)).filter(Boolean);
+                const spouseNames = spouses.length > 0 ? spouses.map(s => s.name).join(', ') : '-';
+                
+                const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear || '-'}`;
+
+                const check = typeof checkUpcomingMemberAnniversary === 'function' ? checkUpcomingMemberAnniversary(m) : { isUpcoming: false };
+                const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-stone-50 transition ${highlightBg}`;
+                tr.innerHTML = `
+                    <td class="p-3 text-center text-stone-500 font-semibold">${index + 1}</td>
+                    <td class="p-3 font-semibold text-stone-800 flex items-center space-x-2">
+                        ${m.avatar ? `<img src="${m.avatar}" class="w-8 h-8 rounded-full object-cover border border-stone-300">` : `<div class="w-8 h-8 rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div>`}
+                        <button onclick="showDetail('${m.id}')" class="text-crimson hover:underline">${m.name}</button>
+                        ${check.isUpcoming ? `<span class="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 shadow-sm">${check.type === 'giỗ' ? '🕯️' : '🎂'} Sắp tới ${check.type}</span>` : ''}
+                    </td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-xs">Đời F${m.generation || '?'}</span></td>
+                    <td class="p-3">${m.gender === 'Nam' ? '<span class="text-blue-600 font-semibold"><i class="fa-solid fa-mars"></i> Nam</span>' : '<span class="text-pink-600 font-semibold"><i class="fa-solid fa-venus"></i> Nữ</span>'}</td>
+                    <td class="p-3 text-xs">${timeInfo}</td>
+                    <td class="p-3">${m.status === 'Còn sống' ? '<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs">Còn sống</span>' : '<span class="px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 text-xs">Đã mất</span>'}</td>
+                    <td class="p-3 text-xs text-stone-600">${parentNames}</td>
+                    <td class="p-3 text-xs text-stone-600">${spouseNames}</td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="openEditModal('${m.id}')" class="text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteMember('${m.id}')" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
             
             function addBranchMembers(personId) {
                 const person = filtered.find(m => m.id === personId);
