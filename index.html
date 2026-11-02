@@ -604,7 +604,14 @@
             if (!ancestorSelect) return;
             const currentValue = ancestorSelect.value;
 
-            let sortedMembers = [...members].sort((a, b) => (a.generation - b.generation) || (a.orderIndex - b.orderIndex));
+            // Sắp xếp danh sách con cháu trong ô chọn theo đúng thế hệ và thứ tự
+            let sortedMembers = [...members].sort((a, b) => {
+                if (a.generation !== b.generation) return a.generation - b.generation;
+                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
+                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
+                if (orderA !== orderB) return orderA - orderB;
+                return parseYear(a.birthYear) - parseYear(b.birthYear);
+            });
 
             ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>';
             sortedMembers.forEach(m => {
@@ -1280,25 +1287,28 @@ function convertLunarToSolar(lunarMonth, lunarDay) {
                 return matchSearch && matchGen && matchStatus && matchAncestor && matchGender && matchBranch;
             });
 
-            // Sắp xếp: Thế hệ -> Huyết thống trước, vợ/chồng (dâu/rể) đứng liền ngay sau
+            // Sắp xếp: Thế hệ -> Đảm bảo Vợ luôn đứng liền ngay sau Chồng
             filtered.sort((a, b) => {
                 if (a.generation !== b.generation) return a.generation - b.generation;
 
-                function getPrimaryAnchorId(m) {
-                    if (m.fatherId || m.motherId || m.generation === 1) return m.id;
-                    let spouse = members.find(s => (s.spouseIds || []).includes(m.id));
-                    if (spouse) return spouse.id;
+                // Hàm tìm "trụ cột" chính (Chồng hoặc thành viên huyết thống làm gốc cho cặp vợ chồng)
+                function getPrimaryAnchor(m) {
+                    // Nếu là Nam, chính là chồng/huyết thống nam
+                    if (m.gender === 'Nam') return m.id;
+                    // Nếu là Nữ, kiểm tra xem có chồng (Nam) nào chung spouseIds không
+                    let husband = members.find(s => s.gender === 'Nam' && (s.spouseIds || []).includes(m.id));
+                    if (husband) return husband.id;
+                    // Trường hợp ngược lại nếu nữ là huyết thống gốc mà không có chồng
                     return m.id;
                 }
 
-                const anchorA = getPrimaryAnchorId(a);
-                const anchorB = getPrimaryAnchorId(b);
+                const anchorA = getPrimaryAnchor(a);
+                const anchorB = getPrimaryAnchor(b);
 
                 if (anchorA === anchorB) {
-                    const isAHuesThong = (a.fatherId || a.motherId || a.generation === 1);
-                    const isBHuesThong = (b.fatherId || b.motherId || b.generation === 1);
-                    if (isAHuesThong && !isBHuesThong) return -1;
-                    if (!isAHuesThong && isBHuesThong) return 1;
+                    // Nếu chung một đôi vợ chồng: Chồng (Nam) luôn đứng trước, Vợ (Nữ) đứng ngay sau
+                    if (a.gender === 'Nam' && b.gender !== 'Nam') return -1;
+                    if (a.gender !== 'Nam' && b.gender === 'Nam') return 1;
                     return 0;
                 }
 
