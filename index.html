@@ -414,7 +414,6 @@
                     updateGenerationFilterOptions();
                     updateAncestorFilterOptions();
                     
-                    // GỌI RENDER BẢNG VÀ CÂY TẠI ĐÂY SAU KHI ĐÃ CÓ ĐỦ DỮ LIỆU
                     renderTree();
                     renderTable();
                     renderAnniversaries();
@@ -594,90 +593,18 @@
 
             filterSelect.innerHTML = '<option value="">-- Tất cả thế hệ --</option>';
             generations.forEach(gen => {
-                filterSelect.innerHTML += `<option value="${gen}">Đời F${gen}</option>`;
-            });
-            filterSelect.value = currentValue;
-        }
-
-        function updateAncestorFilterOptions() {
-            const ancestorSelect = document.getElementById('filter-ancestor');
-            if (!ancestorSelect) return;
-            const currentValue = ancestorSelect.value;
-
-            let sortedMembers = [...members];
-            let familyOrderMap = new Map();
-            let globalIndex = 0;
-
-            function assignFamilyOrder(personId) {
-                if (familyOrderMap.has(personId)) return;
-                familyOrderMap.set(personId, globalIndex++);
-
-                let children = members.filter(m => m.fatherId === personId || m.motherId === personId);
-                children.sort((a, b) => {
-                    const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                    const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                    if (orderA !== orderB) return orderA - orderB;
-                    return parseYear(a.birthYear) - parseYear(b.birthYear);
-                });
-
-                children.forEach(c => assignFamilyOrder(c.id));
-            }
-
-            let roots = members.filter(m => !m.fatherId && !m.motherId);
-            roots.sort((a, b) => {
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
-                return parseYear(a.birthYear) - parseYear(b.birthYear);
-            });
-            roots.forEach(r => assignFamilyOrder(r.id));
-
-            sortedMembers.sort((a, b) => {
-                const genA = a.generation || 1;
-                const genB = b.generation || 1;
-                if (genA !== genB) return genA - genB;
-
-                let anchorA = a.id;
-                if (a.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(a.id));
-                    if (husband) anchorA = husband.id;
-                }
-
-                let anchorB = b.id;
-                if (b.gender !== 'Nam') {
-                    let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds || []).includes(b.id));
-                    if (husband) anchorB = husband.id;
-                }
-
-                if (anchorA === anchorB) {
-                    if (a.gender === 'Nam') return -1;
-                    if (b.gender === 'Nam') return 1;
-                    return 0;
-                }
-
-                const posA = familyOrderMap.has(anchorA) ? familyOrderMap.get(anchorA) : 9999;
-                const posB = familyOrderMap.has(anchorB) ? familyOrderMap.get(anchorB) : 9999;
-                if (posA !== posB) return posA - posB;
-
-                const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999;
-                const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999;
-                if (orderA !== orderB) return orderA - orderB;
-
-                return parseYear(a.birthYear) - parseYear(b.birthYear);
-            });
-
-            ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>';
-            sortedMembers.forEach(m => {
-                const genLabel = m.generation ? `(Đời F${m.generation})` : '';
-                ancestorSelect.innerHTML += `<option value="${m.id}">Con cháu của: ${m.name} ${genLabel}</option>`;
+                filterSelect.innerHTML += `<option value="${gen}">Đời F${gen}</option>`; }); filterSelect.value = currentValue; }  function updateAncestorFilterOptions() { const ancestorSelect = document.getElementById('filter-ancestor'); if (!ancestorSelect) return; const currentValue = ancestorSelect.value;  let sortedMembers = [...members]; let familyOrderMap = new Map(); let globalIndex = 0;  function assignFamilyOrder(personId) { if (familyOrderMap.has(personId)) return; familyOrderMap.set(personId, globalIndex++);  let children = members.filter(m => m.fatherId === personId \vert{}\vert{} m.motherId === personId); children.sort((a, b) => { const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999; const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999; if (orderA !== orderB) return orderA - orderB; return parseYear(a.birthYear) - parseYear(b.birthYear); });  children.forEach(c => assignFamilyOrder(c.id)); }  let roots = members.filter(m => !m.fatherId && !m.motherId); roots.sort((a, b) => { const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999; const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999; if (orderA !== orderB) return orderA - orderB; return parseYear(a.birthYear) - parseYear(b.birthYear); }); roots.forEach(r => assignFamilyOrder(r.id));  sortedMembers.sort((a, b) => { const genA = a.generation \vert{}\vert{} 1; const genB = b.generation \vert{}\vert{} 1; if (genA !== genB) return genA - genB;  let anchorA = a.id; if (a.gender !== 'Nam') { let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds \vert{}\vert{} []).includes(a.id)); if (husband) anchorA = husband.id; }  let anchorB = b.id; if (b.gender !== 'Nam') { let husband = members.find(m => m.gender === 'Nam' && (m.spouseIds \vert{}\vert{} []).includes(b.id)); if (husband) anchorB = husband.id; }  if (anchorA === anchorB) { if (a.gender === 'Nam') return -1; if (b.gender === 'Nam') return 1; return 0; }  const posA = familyOrderMap.has(anchorA) ? familyOrderMap.get(anchorA) : 9999; const posB = familyOrderMap.has(anchorB) ? familyOrderMap.get(anchorB) : 9999; if (posA !== posB) return posA - posB;  const orderA = a.orderIndex !== undefined && a.orderIndex !== "" ? parseInt(a.orderIndex) : 999; const orderB = b.orderIndex !== undefined && b.orderIndex !== "" ? parseInt(b.orderIndex) : 999; if (orderA !== orderB) return orderA - orderB;  return parseYear(a.birthYear) - parseYear(b.birthYear); });  ancestorSelect.innerHTML = '<option value="">-- Tất cả các nhánh (Con cháu của...) --</option>'; sortedMembers.forEach(m => { const genLabel = m.generation ? `(Đời F${m.generation})` : '';
+                ancestorSelect.innerHTML += `<option value="${m.id}">Con cháu của: ${m.name}${genLabel}</option>`;
             });
             ancestorSelect.value = currentValue;
         }
 
         function getAllDescendantIds(ancestorId) {
-            // CHỈ LẤY HẬU DUỆ HUYẾT THỐNG, LOẠI BỎ VỢ/CHỒNG (DÂU/RỂ) CỦA ÔNG A
+            // LẤY TẤT CẢ HẬU DUỆ HUYẾT THỐNG VÀ VỢ/CHỒNG (DÂU/RỂ) CỦA CÁC CON CHÁU PHÍA DƯỚI, 
+            // CHỈ LOẠI BỎ NGƯỜI VỢ/CHỒNG TRỰC TIẾP CỦA CHÍNH ANCESTORID (ÔNG A)
             const ancestorKey = String(ancestorId).trim();
             const descendantSet = new Set();
+            const bloodlineSet = new Set([ancestorKey]);
             const queue = [ancestorKey];
 
             while (queue.length > 0) {
@@ -689,12 +616,39 @@
 
                 children.forEach(child => {
                     const childId = String(child.id || '').trim();
-                    if (!childId || descendantSet.has(childId)) return;
+                    if (!childId || bloodlineSet.has(childId)) return;
 
+                    bloodlineSet.add(childId);
                     descendantSet.add(childId);
                     queue.push(childId);
                 });
             }
+
+            // Thêm lại vợ/chồng (dâu/rể) của các đời con cháu phía dưới (không bỏ dâu rể của con cháu)
+            bloodlineSet.forEach(personId => {
+                const person = members.find(m => String(m.id).trim() === personId);
+                if (!person) return;
+
+                const spouseIds = new Set(
+                    (Array.isArray(person.spouseIds) ? person.spouseIds : [])
+                        .map(id => String(id).trim())
+                        .filter(Boolean)
+                );
+
+                members.forEach(other => {
+                    const otherSpouses = Array.isArray(other.spouseIds) ? other.spouseIds : [];
+                    if (otherSpouses.some(id => String(id).trim() === personId)) {
+                        spouseIds.add(String(other.id).trim());
+                    }
+                });
+
+                spouseIds.forEach(spouseId => {
+                    // CHỈ LOẠI BỎ VỢ/CHỒNG TRỰC TIẾP CỦA ÔNG A, CÒN DÂU RỂ CỦA CON CHÁU THÌ VẪN GIỮ LẠI
+                    if (spouseId && spouseId !== ancestorKey && !bloodlineSet.has(spouseId)) {
+                        descendantSet.add(spouseId);
+                    }
+                });
+            });
 
             return descendantSet;
         }
@@ -831,7 +785,7 @@
             if (father || mother) {
                 return `${father ? father.name : ''} ${mother ? (father ? ' / ' : '') + mother.name : ''}`;
             } else if (member.inlawFather || member.inlawMother) {
-                return `${member.inlawFather || ''} ${member.inlawMother ? (member.inlawFather ? ' / ' : '') + member.inlawMother : ''} (Bố mẹ đẻ)`;
+                return `${member.inlawFather \vert{}\vert{} ''}${member.inlawMother ? (member.inlawFather ? ' / ' : '') + member.inlawMother : ''} (Bố mẹ đẻ)`;
             }
             return 'Chưa cập nhật';
         }
@@ -1071,94 +1025,13 @@
                     const check = checkUpcomingMemberAnniversary(m);
                     if (check.isUpcoming) {
                         const icon = check.type === 'giỗ' ? '🕯️' : '🎂';
-                        const daysText = check.daysLeft === 0 ? 'Hôm nay!' : `Còn ${check.daysLeft} ngày`;
-                        return `${icon} Cận ${check.type}: ${daysText}`;
+                        const daysText = check.daysLeft === 0 ? 'Hôm nay!' : `Còn ${check.daysLeft} ngày`; return `${icon} Cận ${check.type}:${daysText}`;
                     }
 
-                    const genText = `Đời F${m.generation || '?'}`;
-                    if (m.status === 'Đã mất') {
-                        const deathInfo = m.deathDate ? `Giỗ: ${m.deathDate}` : 'Đã mất';
-                        return `${genText} • ${deathInfo}`;
+                    const genText = `Đời F${m.generation \vert{}\vert{} '?'}`; if (m.status === 'Đã mất') { const deathInfo = m.deathDate ? `Giỗ: ${m.deathDate}` : 'Đã mất';
+                        return `${genText} •${deathInfo}`;
                     } else {
-                        const birthInfo = m.birthYear ? `Sinh: ${m.birthYear}` : 'Còn sống';
-                        return `${genText} • ${birthInfo}`;
-                    }
-                });
-
-            const toggleNodes = nodes.filter(d => d.data.children && d.data.children.length > 0);
-            const toggleGroup = toggleNodes.append("g")
-                .attr("class", "toggle-btn")
-                .attr("transform", "translate(0, 25)")
-                .style("cursor", "pointer")
-                .on("click", (event, d) => {
-                    event.stopPropagation();
-                    if (collapsedNodes.has(d.data.id)) {
-                        collapsedNodes.delete(d.data.id);
-                    } else {
-                        collapsedNodes.add(d.data.id);
-                    }
-                    renderTree();
-                });
-
-            toggleGroup.append("circle")
-                .attr("r", 9)
-                .attr("fill", "#78350f")
-                .attr("stroke", "#ffffff")
-                .attr("stroke-width", 1.5);
-
-            toggleGroup.append("text")
-                .attr("dy", "3.5")
-                .attr("text-anchor", "middle")
-                .attr("fill", "#ffffff")
-                .attr("font-size", "11px")
-                .attr("font-weight", "bold")
-                .text(d => collapsedNodes.has(d.data.id) ? "+" : "-");
-
-            nodes.each(function(d) {
-                const currentId = d.data.id;
-                const currentMember = members.find(m => m.id === currentId);
-                if (!currentMember) return;
-
-                let allSpouseIds = new Set(currentMember.spouseIds || []);
-                members.forEach(other => {
-                    if ((other.spouseIds || []).includes(currentId)) {
-                        allSpouseIds.add(other.id);
-                    }
-                });
-
-                if (allSpouseIds.size === 0) return;
-
-                const spouseList = Array.from(allSpouseIds).map(id => members.find(s => s.id === id)).filter(Boolean);
-                const hasNamPartner = spouseList.some(s => s.gender === 'Nam') || currentMember.gender === 'Nam';
-
-                if (hasNamPartner && currentMember.gender !== 'Nam') {
-                    const hasLowerIdNam = spouseList.some(s => s.gender === 'Nam' && s.id < currentId);
-                    if (hasLowerIdNam) return;
-                }
-
-                let spouseIndex = 0;
-                allSpouseIds.forEach((spouseId) => {
-                    const spouse = members.find(m => m.id === spouseId);
-                    if (!spouse) return;
-
-                    const nodeGroup = d3.select(this);
-                    
-                    const groupTranslate = 170 + (spouseIndex * 170);
-                    const xOffsetStart = (spouseIndex === 0) ? 80 : (groupTranslate - 170 + 80);
-                    const xOffsetEnd = groupTranslate - 80;
-
-                    nodeGroup.append("line")
-                        .attr("x1", xOffsetStart)
-                        .attr("y1", 0)
-                        .attr("x2", xOffsetEnd)
-                        .attr("y2", 0)
-                        .attr("stroke", "#d4af37")
-                        .attr("stroke-width", "2.5");
-
-                    const checkSpouseUpcoming = checkUpcomingMemberAnniversary(spouse);
-
-                    const spouseGroup = nodeGroup.append("g")
-                        .attr("transform", `translate(${groupTranslate}, 0)`)
+                        const birthInfo = m.birthYear ? `Sinh: ${m.birthYear}` : 'Còn sống'; return `${genText} • ${birthInfo}`; } });  const toggleNodes = nodes.filter(d => d.data.children && d.data.children.length > 0); const toggleGroup = toggleNodes.append("g") .attr("class", "toggle-btn") .attr("transform", "translate(0, 25)") .style("cursor", "pointer") .on("click", (event, d) => { event.stopPropagation(); if (collapsedNodes.has(d.data.id)) { collapsedNodes.delete(d.data.id); } else { collapsedNodes.add(d.data.id); } renderTree(); });  toggleGroup.append("circle") .attr("r", 9) .attr("fill", "#78350f") .attr("stroke", "#ffffff") .attr("stroke-width", 1.5);  toggleGroup.append("text") .attr("dy", "3.5") .attr("text-anchor", "middle") .attr("fill", "#ffffff") .attr("font-size", "11px") .attr("font-weight", "bold") .text(d => collapsedNodes.has(d.data.id) ? "+" : "-");  nodes.each(function(d) { const currentId = d.data.id; const currentMember = members.find(m => m.id === currentId); if (!currentMember) return;  let allSpouseIds = new Set(currentMember.spouseIds \vert{}\vert{} []); members.forEach(other => { if ((other.spouseIds \vert{}\vert{} []).includes(currentId)) { allSpouseIds.add(other.id); } });  if (allSpouseIds.size === 0) return;  const spouseList = Array.from(allSpouseIds).map(id => members.find(s => s.id === id)).filter(Boolean); const hasNamPartner = spouseList.some(s => s.gender === 'Nam') \vert{}\vert{} currentMember.gender === 'Nam';  if (hasNamPartner && currentMember.gender !== 'Nam') { const hasLowerIdNam = spouseList.some(s => s.gender === 'Nam' && s.id < currentId); if (hasLowerIdNam) return; }  let spouseIndex = 0; allSpouseIds.forEach((spouseId) => { const spouse = members.find(m => m.id === spouseId); if (!spouse) return;  const nodeGroup = d3.select(this);  const groupTranslate = 170 + (spouseIndex * 170); const xOffsetStart = (spouseIndex === 0) ? 80 : (groupTranslate - 170 + 80); const xOffsetEnd = groupTranslate - 80;  nodeGroup.append("line") .attr("x1", xOffsetStart) .attr("y1", 0) .attr("x2", xOffsetEnd) .attr("y2", 0) .attr("stroke", "#d4af37") .attr("stroke-width", "2.5");  const checkSpouseUpcoming = checkUpcomingMemberAnniversary(spouse);  const spouseGroup = nodeGroup.append("g") .attr("transform", `translate(${groupTranslate}, 0)`)
                         .on("click", (e) => {
                             e.stopPropagation();
                             showDetail(spouse.id);
@@ -1200,15 +1073,11 @@
                         .text(() => {
                             if (checkSpouseUpcoming.isUpcoming) {
                                 const icon = checkSpouseUpcoming.type === 'giỗ' ? '🕯️' : '🎂';
-                                const daysText = checkSpouseUpcoming.daysLeft === 0 ? 'Hôm nay!' : `Còn ${checkSpouseUpcoming.daysLeft} ngày`;
-                                return `${icon} ${spouseLabel}: ${daysText}`;
+                                const daysText = checkSpouseUpcoming.daysLeft === 0 ? 'Hôm nay!' : `Còn ${checkSpouseUpcoming.daysLeft} ngày`; return `${icon} ${spouseLabel}:${daysText}`;
                             }
                             if (spouse.status === 'Đã mất') {
-                                const dInfo = spouse.deathDate ? `Giỗ: ${spouse.deathDate}` : '';
-                                return `(${spouseLabel}) ${dInfo}`;
-                            } else {
-                                const bInfo = spouse.birthYear ? `Sinh: ${spouse.birthYear}` : '';
-                                return `(${spouseLabel}) ${bInfo}`;
+                                const dInfo = spouse.deathDate ? `Giỗ: ${spouse.deathDate}` : ''; return `(${spouseLabel}) ${dInfo}`; } else { const bInfo = spouse.birthYear ? `Sinh: ${spouse.birthYear}` : '';
+                                return `(${spouseLabel})${bInfo}`;
                             }
                         });
 
@@ -1231,52 +1100,10 @@
                             const fillColor = checkUp.isUpcoming ? '#fef3c7' : '#fffbeb';
                             const borderColor = checkUp.isUpcoming ? '#d4af37' : '#b45309';
 
-                            const card = inlawGroup.append("g").attr("transform", `translate(${xPos}, 0)`);
-                            
-                            if (isDeceased) {
-                                card.append("clipPath").attr("id", `clip-inlaw-${spouse.id}-${isFather?'f':'m'}`)
-                                    .append("rect").attr("width", 100).attr("height", 34).attr("x", -50).attr("y", -17).attr("rx", 6);
-                            }
-
-                            card.append("rect")
-                                .attr("width", 100)
-                                .attr("height", 34)
-                                .attr("x", -50)
-                                .attr("y", -17)
-                                .attr("rx", 6)
-                                .attr("fill", fillColor)
-                                .attr("stroke", borderColor)
-                                .attr("stroke-width", checkUp.isUpcoming ? "2.5" : "1.5")
-                                .attr("class", checkUp.isUpcoming ? "glow-upcoming" : "");
-
-                            if (isDeceased) {
-                                card.append("path")
-                                    .attr("d", "M -50 -11 A 5 5 0 0 1 -45 -17 L -32 -17 L -50 2 Z")
-                                    .attr("fill", "#1c1917");
-                            }
-
-                            card.append("text")
-                                .attr("x", 0)
-                                .attr("y", -3)
-                                .attr("text-anchor", "middle")
-                                .attr("class", "font-bold text-[10px]")
-                                .attr("fill", "#78350f")
-                                .text(name);
-
-                            card.append("text")
-                                .attr("x", 0)
-                                .attr("y", 10)
-                                .attr("text-anchor", "middle")
-                                .attr("class", "text-[9px]")
-                                .attr("fill", checkUp.isUpcoming ? "#b45309" : "#9a3412")
-                                .text(() => {
-                                    if (checkUp.isUpcoming) {
-                                        return `🕯️ Còn ${checkUp.daysLeft} ngày`;
+                            const card = inlawGroup.append("g").attr("transform", `translate(${xPos}, 0)`);  if (isDeceased) { card.append("clipPath").attr("id", `clip-inlaw-${spouse.id}-${isFather?'f':'m'}`) .append("rect").attr("width", 100).attr("height", 34).attr("x", -50).attr("y", -17).attr("rx", 6); }  card.append("rect") .attr("width", 100) .attr("height", 34) .attr("x", -50) .attr("y", -17) .attr("rx", 6) .attr("fill", fillColor) .attr("stroke", borderColor) .attr("stroke-width", checkUp.isUpcoming ? "2.5" : "1.5") .attr("class", checkUp.isUpcoming ? "glow-upcoming" : "");  if (isDeceased) { card.append("path") .attr("d", "M -50 -11 A 5 5 0 0 1 -45 -17 L -32 -17 L -50 2 Z") .attr("fill", "#1c1917"); }  card.append("text") .attr("x", 0) .attr("y", -3) .attr("text-anchor", "middle") .attr("class", "font-bold text-[10px]") .attr("fill", "#78350f") .text(name);  card.append("text") .attr("x", 0) .attr("y", 10) .attr("text-anchor", "middle") .attr("class", "text-[9px]") .attr("fill", checkUp.isUpcoming ? "#b45309" : "#9a3412") .text(() => { if (checkUp.isUpcoming) { return `🕯️ Còn ${checkUp.daysLeft} ngày`;
                                     }
                                     if (isDeceased) {
-                                        return `Giỗ: ${death || 'Chưa rõ'}`;
-                                    } else {
-                                        return birth ? `Sinh: ${birth}` : (isFather ? 'Bố đẻ' : 'Mẹ đẻ');
+                                        return `Giỗ: ${death \vert{}\vert{} 'Chưa rõ'}`; } else { return birth ? `Sinh: ${birth}` : (isFather ? 'Bố đẻ' : 'Mẹ đẻ');
                                     }
                                 });
                         }
@@ -1443,19 +1270,12 @@
                 const spouses = Array.from(allSpouseIds).map(id => members.find(s => s.id === id)).filter(Boolean);
                 const spouseNames = spouses.length > 0 ? spouses.map(s => s.name).join(', ') : '-';
                 
-                const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear || '-'}`;
-
-                const check = typeof checkUpcomingMemberAnniversary === 'function' ? checkUpcomingMemberAnniversary(m) : { isUpcoming: false };
-                const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';
-
-                const tr = document.createElement('tr');
-                tr.className = `hover:bg-stone-50 transition ${highlightBg}`;
+                const timeInfo = m.status === 'Đã mất' ? `<span class="text-crimson font-medium">Giỗ: ${m.deathDate || 'Chưa rõ'}</span>` : `Sinh: ${m.birthYear \vert{}\vert{} '-'}`;  const check = typeof checkUpcomingMemberAnniversary === 'function' ? checkUpcomingMemberAnniversary(m) : { isUpcoming: false }; const highlightBg = check.isUpcoming ? 'bg-amber-50 font-bold border-l-4 border-amber-500' : '';  const tr = document.createElement('tr'); tr.className = `hover:bg-stone-50 transition ${highlightBg}`;
                 tr.innerHTML = `
                     <td class="p-3 text-center text-stone-500 font-semibold">${index + 1}</td>
                     <td class="p-3 font-semibold text-stone-800 flex items-center space-x-2">
                         ${m.avatar ? `<img src="${m.avatar}" class="w-8 h-8 rounded-full object-cover border border-stone-300">` : `<div class="w-8 h-8 rounded-full ${m.gender === 'Nam' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div>`}
-                        <button onclick="showDetail('${m.id}')" class="text-crimson hover:underline">${m.name}</button>
-                        ${check.isUpcoming ? `<span class="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 shadow-sm">${check.type === 'giỗ' ? '🕯️' : '🎂'} Sắp tới ${check.type}</span>` : ''}
+                        <button onclick="showDetail('${m.id}')" class="text-crimson hover:underline">${m.name}</button>${check.isUpcoming ? `<span class="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 shadow-sm">${check.type === 'giỗ' ? '🕯️' : '🎂'} Sắp tới ${check.type}</span>` : ''}
                     </td>
                     <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-xs">Đời F${m.generation || '?'}</span></td>
                     <td class="p-3">${m.gender === 'Nam' ? '<span class="text-blue-600 font-semibold"><i class="fa-solid fa-mars"></i> Nam</span>' : '<span class="text-pink-600 font-semibold"><i class="fa-solid fa-venus"></i> Nữ</span>'}</td>
@@ -1498,15 +1318,7 @@
                         if (sp.inlawFatherStatus === 'Đã mất' && sp.inlawFatherDeath) {
                             anniversaryList.push({
                                 name: sp.inlawFather,
-                                role: `Bố đẻ của ${sp.name} (${sp.gender === 'Nam' ? 'Dâu' : 'Rể'} nhà ${m.name})`,
-                                deathDate: sp.inlawFatherDeath,
-                                notes: 'Thông gia'
-                            });
-                        }
-                        if (sp.inlawMotherStatus === 'Đã mất' && sp.inlawMotherDeath) {
-                            anniversaryList.push({
-                                name: sp.inlawMother,
-                                role: `Mẹ đẻ của ${sp.name} (${sp.gender === 'Nam' ? 'Dâu' : 'Rể'} nhà ${m.name})`,
+                                role: `Bố đẻ của ${sp.name} (${sp.gender === 'Nam' ? 'Dâu' : 'Rể'} nhà ${m.name})`, deathDate: sp.inlawFatherDeath, notes: 'Thông gia' }); } if (sp.inlawMotherStatus === 'Đã mất' && sp.inlawMotherDeath) { anniversaryList.push({ name: sp.inlawMother, role: `Mẹ đẻ của ${sp.name} (${sp.gender === 'Nam' ? 'Dâu' : 'Rể'} nhà ${m.name})`,
                                 deathDate: sp.inlawMotherDeath,
                                 notes: 'Thông gia'
                             });
@@ -1528,8 +1340,7 @@
                 tr.className = highlightClass;
                 tr.innerHTML = `
                     <td class="p-3 font-bold text-crimson flex items-center space-x-2">
-                        <span>${item.name}</span>
-                        ${check.isUpcoming ? `<span class="text-xs px-2 py-0.5 rounded-full bg-red-800 text-amber-300 font-bold shadow animate-pulse">🕯️ Còn ${check.daysLeft} ngày</span>` : ''}
+                        <span>${item.name}</span>${check.isUpcoming ? `<span class="text-xs px-2 py-0.5 rounded-full bg-red-800 text-amber-300 font-bold shadow animate-pulse">🕯️ Còn ${check.daysLeft} ngày</span>` : ''}
                     </td>
                     <td class="p-3 text-xs font-semibold text-amber-900">${item.role}</td>
                     <td class="p-3 font-semibold text-amber-900">${item.deathDate || 'Chưa cập nhật'}</td>
@@ -1594,7 +1405,7 @@
                         </div>
                     `}
                     <h4 class="text-xl font-bold font-serif-title text-stone-800">${m.name}</h4>
-                    <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-bold rounded-full text-xs mt-1">Thế hệ / Đời thứ F${m.generation || '?'} ${m.orderIndex ? '• Thứ tự: '+m.orderIndex : ''}</span>
+                    <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-bold rounded-full text-xs mt-1">Thế hệ / Đời thứ F${m.generation \vert{}\vert{} '?'}${m.orderIndex ? '• Thứ tự: '+m.orderIndex : ''}</span>
                 </div>
 
                 <div class="space-y-3 text-sm">
@@ -1668,263 +1479,4 @@
                             </p>
                             ${inlawList.map(item => `
                                 <div class="bg-white p-2 rounded border border-amber-100 shadow-sm space-y-0.5">
-                                    <p class="text-amber-900 font-semibold">• Thông gia nhà ${item.relationType} (${item.spouseName} - ${item.spouseRole} ${item.childName}):</p>
-                                    <p class="text-stone-600 pl-3">- Ông thông gia: <strong>${item.inlawFather || 'Chưa rõ'}</strong></p>
-                                    <p class="text-stone-600 pl-3">- Bà thông gia: <strong>${item.inlawMother || 'Chưa rõ'}</strong></p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-
-                    <div class="border-b pb-2">
-                        <span class="text-stone-500 block mb-1">Quê quán / Nơi ở chung:</span>
-                        <p class="text-stone-800">${m.location || 'Chưa cập nhật'}</p>
-                    </div>
-
-                    <div>
-                        <span class="text-stone-500 block mb-1">Tiểu sử / Ghi chú:</span>
-                        <p class="text-stone-800 bg-stone-50 p-2 rounded text-xs leading-relaxed">${m.notes || 'Không có ghi chú.'}</p>
-                    </div>
-                </div>
-
-                <div class="pt-4 flex space-x-2">
-                    <button onclick="openEditModal('${m.id}')" class="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 transition">Chỉnh Sửa</button>
-                    <button onclick="closeDrawer()" class="px-4 py-2 border border-stone-300 rounded-lg text-sm">Đóng</button>
-                </div>
-            `;
-
-            document.getElementById('detail-drawer').classList.remove('translate-x-full');
-        }
-
-        function closeDrawer() {
-            document.getElementById('detail-drawer').classList.add('translate-x-full');
-        }
-
-        function populateDropdowns(currentId = null) {
-            const fatherSelect = document.getElementById('form-father');
-            const motherSelect = document.getElementById('form-mother');
-            const spouseSelect = document.getElementById('form-spouse');
-
-            fatherSelect.innerHTML = '<option value="">-- Không chọn --</option>';
-            motherSelect.innerHTML = '<option value="">-- Không chọn --</option>';
-            spouseSelect.innerHTML = '<option value="">-- Chọn thành viên --</option>';
-
-            members.filter(m => m.id !== currentId).forEach(m => {
-                const opt = `<option value="${m.id}">${m.name} (Đời F${m.generation || '?'})</option>`;
-                if (m.gender === 'Nam') fatherSelect.innerHTML += opt;
-                if (m.gender === 'Nữ') motherSelect.innerHTML += opt;
-                spouseSelect.innerHTML += opt;
-            });
-        }
-
-        function openAddModal() {
-            let pwd = prompt("Nhập mật khẩu quản trị để thêm thành viên:");
-            if (pwd !== ADMIN_PASSWORD) {
-                alert("Sai mật khẩu! Bạn không có quyền thực hiện thao tác này.");
-                return;
-            }
-
-            document.getElementById('modal-title').innerText = "Thêm Thành Viên Mới";
-            document.getElementById('member-form').reset();
-            document.getElementById('member-id').value = '';
-            document.getElementById('form-order').value = '';
-            document.getElementById('form-avatar').value = '';
-            populateDropdowns();
-            toggleStatusFields();
-            toggleInlawFields();
-            document.getElementById('member-modal').classList.remove('hidden');
-        }
-
-        function openEditModal(id) {
-            let pwd = prompt("Nhập mật khẩu quản trị để chỉnh sửa thành viên:");
-            if (pwd !== ADMIN_PASSWORD) {
-                alert("Sai mật khẩu! Không có quyền chỉnh sửa.");
-                return;
-            }
-
-            closeDrawer();
-            const m = members.find(item => item.id === id);
-            if (!m) return;
-
-            document.getElementById('modal-title').innerText = "Chỉnh Sửa Thành Viên";
-            populateDropdowns(id);
-
-            document.getElementById('member-id').value = m.id;
-            document.getElementById('form-name').value = m.name;
-            document.getElementById('form-gender').value = m.gender;
-            document.getElementById('form-order').value = m.orderIndex !== undefined ? m.orderIndex : '';
-            document.getElementById('form-avatar').value = m.avatar || '';
-            document.getElementById('form-status').value = m.status;
-            document.getElementById('form-birth').value = m.birthYear || '';
-            document.getElementById('form-death').value = m.deathDate || '';
-            document.getElementById('form-burial').value = m.burialPlace || '';
-            document.getElementById('form-phone').value = m.phone || '';
-            document.getElementById('form-email').value = m.email || '';
-            document.getElementById('form-address').value = m.address || '';
-            document.getElementById('form-father').value = m.fatherId || '';
-            document.getElementById('form-mother').value = m.motherId || '';
-            document.getElementById('form-spouse').value = (m.spouseIds && m.spouseIds.length > 0) ? m.spouseIds[0] : '';
-            
-            document.getElementById('form-inlaw-father').value = m.inlawFather || '';
-            document.getElementById('form-inlaw-father-birth').value = m.inlawFatherBirth || '';
-            document.getElementById('form-inlaw-father-status').value = m.inlawFatherStatus || 'Còn sống';
-            document.getElementById('form-inlaw-father-death').value = m.inlawFatherDeath || '';
-
-            document.getElementById('form-inlaw-mother').value = m.inlawMother || '';
-            document.getElementById('form-inlaw-mother-birth').value = m.inlawMotherBirth || '';
-            document.getElementById('form-inlaw-mother-status').value = m.inlawMotherStatus || 'Còn sống';
-            document.getElementById('form-inlaw-mother-death').value = m.inlawMotherDeath || '';
-
-            document.getElementById('form-location').value = m.location || '';
-            document.getElementById('form-notes').value = m.notes || '';
-
-            toggleStatusFields();
-            toggleInlawFields();
-            document.getElementById('member-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('member-modal').classList.add('hidden');
-        }
-
-        function toggleStatusFields() {
-            const status = document.getElementById('form-status').value;
-            const deceasedContainer = document.getElementById('deceased-fields');
-            const livingContainer = document.getElementById('living-fields');
-
-            if (status === 'Đã mất') {
-                deceasedContainer.classList.remove('hidden');
-                livingContainer.classList.add('hidden');
-            } else {
-                deceasedContainer.classList.add('hidden');
-                livingContainer.classList.remove('hidden');
-            }
-        }
-
-        function toggleInlawFields() {
-            const fStatus = document.getElementById('form-inlaw-father-status').value;
-            const mStatus = document.getElementById('form-inlaw-mother-status').value;
-
-            const fBox = document.getElementById('inlaw-father-death-box');
-            const mBox = document.getElementById('inlaw-mother-death-box');
-
-            if (fStatus === 'Đã mất') fBox.classList.remove('hidden');
-            else fBox.classList.add('hidden');
-
-            if (mStatus === 'Đã mất') mBox.classList.remove('hidden');
-            else mBox.classList.add('hidden');
-        }
-
-        function handleFormSubmit(e) {
-            e.preventDefault();
-            const id = document.getElementById('member-id').value || Date.now().toString();
-            const status = document.getElementById('form-status').value;
-            
-            const fatherId = document.getElementById('form-father').value || null;
-            const newSpouseId = document.getElementById('form-spouse').value || null;
-
-            const existingMember = members.find(m => m.id === id);
-            let spouseIds = existingMember ? (existingMember.spouseIds || []) : [];
-
-            if (newSpouseId && !spouseIds.includes(newSpouseId)) {
-                spouseIds.push(newSpouseId);
-            }
-
-            const memberData = {
-                id: id,
-                name: document.getElementById('form-name').value.trim(),
-                gender: document.getElementById('form-gender').value,
-                generation: existingMember ? existingMember.generation : 1,
-                orderIndex: document.getElementById('form-order').value.trim() !== "" ? parseInt(document.getElementById('form-order').value) : "",
-                avatar: document.getElementById('form-avatar').value.trim(),
-                status: status,
-                birthYear: document.getElementById('form-birth').value.trim(),
-                deathDate: status === 'Đã mất' ? document.getElementById('form-death').value.trim() : '',
-                burialPlace: status === 'Đã mất' ? document.getElementById('form-burial').value.trim() : '',
-                phone: status === 'Còn sống' ? document.getElementById('form-phone').value.trim() : '',
-                email: status === 'Còn sống' ? document.getElementById('form-email').value.trim() : '',
-                address: status === 'Còn sống' ? document.getElementById('form-address').value.trim() : '',
-                fatherId: fatherId,
-                motherId: document.getElementById('form-mother').value || null,
-                spouseIds: spouseIds,
-                inlawFather: document.getElementById('form-inlaw-father').value.trim(),
-                inlawFatherBirth: document.getElementById('form-inlaw-father-birth').value.trim(),
-                inlawFatherStatus: document.getElementById('form-inlaw-father-status').value,
-                inlawFatherDeath: document.getElementById('form-inlaw-father-status').value === 'Đã mất' ? document.getElementById('form-inlaw-father-death').value.trim() : '',
-                inlawMother: document.getElementById('form-inlaw-mother').value.trim(),
-                inlawMotherBirth: document.getElementById('form-inlaw-mother-birth').value.trim(),
-                inlawMotherStatus: document.getElementById('form-inlaw-mother-status').value,
-                inlawMotherDeath: document.getElementById('form-inlaw-mother-status').value === 'Đã mất' ? document.getElementById('form-inlaw-mother-death').value.trim() : '',
-                location: document.getElementById('form-location').value.trim(),
-                notes: document.getElementById('form-notes').value.trim()
-            };
-
-            const existingIndex = members.findIndex(m => m.id === id);
-            if (existingIndex >= 0) {
-                members[existingIndex] = memberData;
-            } else {
-                members.push(memberData);
-            }
-
-            spouseIds.forEach(spouseId => {
-                const spouse = members.find(m => m.id === spouseId);
-                if (spouse) {
-                    if (!spouse.spouseIds) spouse.spouseIds = [];
-                    if (!spouse.spouseIds.includes(id)) {
-                        spouse.spouseIds.push(id);
-                    }
-                }
-            });
-
-            recalculateAllGenerations();
-            saveMembers();
-            closeModal();
-            updateGenerationFilterOptions();
-            updateAncestorFilterOptions();
-            renderTree();
-            renderTable();
-            renderAnniversaries();
-
-            fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(memberData)
-            })
-            .then(() => {
-                console.log("Đã đồng bộ dữ liệu lên Google Sheets thành công!");
-            })
-            .catch(err => {
-                console.error("Lỗi đồng bộ Google Sheets:", err);
-            });
-        }
-
-        function deleteMember(id) {
-            let pwd = prompt("Nhập mật khẩu quản trị để xóa thành viên:");
-            if (pwd !== ADMIN_PASSWORD) {
-                alert("Sai mật khẩu! Không được phép xóa.");
-                return;
-            }
-
-            if (confirm("Ông có chắc chắn muốn xóa thành viên này khỏi gia phả?")) {
-                members = members.filter(m => m.id !== id);
-                members.forEach(m => {
-                    if (m.fatherId === id) m.fatherId = null;
-                    if (m.motherId === id) m.motherId = null;
-                    if (m.spouseIds) {
-                        m.spouseIds = m.spouseIds.filter(sId => sId !== id);
-                    }
-                });
-                
-                recalculateAllGenerations();
-                saveMembers();
-                updateGenerationFilterOptions();
-                updateAncestorFilterOptions();
-                renderTree();
-                renderTable();
-                renderAnniversaries();
-            }
-        }
-    </script>
-</body>
-</html>
+                                    <p class="text-amber-900 font-semibold">• Thông
