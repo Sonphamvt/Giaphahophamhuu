@@ -679,20 +679,56 @@
         }
 
         function getAllDescendantIds(ancestorId) {
-            let descendantSet = new Set();
-            let queue = [ancestorId];
+            // Lấy hậu duệ theo quan hệ cha/mẹ, sau đó thêm vợ/chồng (dâu/rể)
+            // của từng người thuộc huyết thống. Không duyệt tiếp con của dâu/rể
+            // nếu họ không thuộc huyết thống, để tránh lẫn sang nhánh thông gia.
+            const ancestorKey = String(ancestorId).trim();
+            const descendantSet = new Set();
+            const bloodlineSet = new Set([ancestorKey]);
+            const queue = [ancestorKey];
 
             while (queue.length > 0) {
-                let currentId = queue.shift();
-                let children = members.filter(m => m.fatherId === currentId || m.motherId === currentId);
-                
-                children.forEach(c => {
-                    if (!descendantSet.has(c.id)) {
-                        descendantSet.add(c.id);
-                        queue.push(c.id);
-                    }
+                const currentId = queue.shift();
+                const children = members.filter(m =>
+                    String(m.fatherId || '').trim() === currentId ||
+                    String(m.motherId || '').trim() === currentId
+                );
+
+                children.forEach(child => {
+                    const childId = String(child.id || '').trim();
+                    if (!childId || bloodlineSet.has(childId)) return;
+
+                    bloodlineSet.add(childId);
+                    descendantSet.add(childId);
+                    queue.push(childId);
                 });
             }
+
+            // Đồng bộ hai chiều: dữ liệu có thể chỉ lưu spouseIds ở một phía.
+            bloodlineSet.forEach(personId => {
+                const person = members.find(m => String(m.id).trim() === personId);
+                if (!person) return;
+
+                const spouseIds = new Set(
+                    (Array.isArray(person.spouseIds) ? person.spouseIds : [])
+                        .map(id => String(id).trim())
+                        .filter(Boolean)
+                );
+
+                members.forEach(other => {
+                    const otherSpouses = Array.isArray(other.spouseIds) ? other.spouseIds : [];
+                    if (otherSpouses.some(id => String(id).trim() === personId)) {
+                        spouseIds.add(String(other.id).trim());
+                    }
+                });
+
+                spouseIds.forEach(spouseId => {
+                    if (spouseId && spouseId !== ancestorKey && !bloodlineSet.has(spouseId)) {
+                        descendantSet.add(spouseId);
+                    }
+                });
+            });
+
             return descendantSet;
         }
 
