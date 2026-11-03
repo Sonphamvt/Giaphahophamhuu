@@ -414,6 +414,7 @@
                     updateGenerationFilterOptions();
                     updateAncestorFilterOptions();
                     
+                    // GỌI RENDER BẢNG VÀ CÂY TẠI ĐÂY SAU KHI ĐÃ CÓ ĐỦ DỮ LIỆU
                     renderTree();
                     renderTable();
                     renderAnniversaries();
@@ -674,13 +675,16 @@
         }
 
         function getAllDescendantIds(ancestorId) {
-            // LẤY TẤT CẢ HẬU DUỆ HUYẾT THỐNG VÀ VỢ/CHỒNG (DÂU/RỂ) CỦA CÁC CON CHÁU PHÍA DƯỚI, 
-            // CHỈ LOẠI BỎ NGƯỜI VỢ/CHỒNG TRỰC TIẾP CỦA CHÍNH ANCESTORID (ÔNG A)
+            // LỌC CHUẨN XÁC:
+            // 1. Tìm toàn bộ con cháu huyết thống của ancestorId
+            // 2. Thêm vợ/chồng (dâu/rể) của các con cháu
+            // 3. Loại bỏ vợ/chồng của CHÍNH ancestorId (người mốc được lọc)
             const ancestorKey = String(ancestorId).trim();
             const descendantSet = new Set();
             const bloodlineSet = new Set([ancestorKey]);
             const queue = [ancestorKey];
 
+            // 1. Duyệt huyết thống
             while (queue.length > 0) {
                 const currentId = queue.shift();
                 const children = members.filter(m =>
@@ -698,8 +702,10 @@
                 });
             }
 
-            // Thêm lại vợ/chồng (dâu/rể) của các đời con cháu phía dưới (không bỏ dâu rể của con cháu)
+            // 2. Thêm vợ/chồng của các con cháu (bỏ qua vợ/chồng của chính ancestorKey)
             bloodlineSet.forEach(personId => {
+                if (personId === ancestorKey) return; // Bỏ qua người mốc (ông A)
+
                 const person = members.find(m => String(m.id).trim() === personId);
                 if (!person) return;
 
@@ -717,7 +723,6 @@
                 });
 
                 spouseIds.forEach(spouseId => {
-                    // CHỈ LOẠI BỎ VỢ/CHỒNG TRỰC TIẾP CỦA ÔNG A, CÒN DÂU RỂ CỦA CON CHÁU THÌ VẪN GIỮ LẠI
                     if (spouseId && spouseId !== ancestorKey && !bloodlineSet.has(spouseId)) {
                         descendantSet.add(spouseId);
                     }
@@ -1845,4 +1850,114 @@
 
         function handleFormSubmit(e) {
             e.preventDefault();
-            const id
+            const id = document.getElementById('member-id').value || Date.now().toString();
+            const status = document.getElementById('form-status').value;
+            
+            const fatherId = document.getElementById('form-father').value || null;
+            const newSpouseId = document.getElementById('form-spouse').value || null;
+
+            const existingMember = members.find(m => m.id === id);
+            let spouseIds = existingMember ? (existingMember.spouseIds || []) : [];
+
+            if (newSpouseId && !spouseIds.includes(newSpouseId)) {
+                spouseIds.push(newSpouseId);
+            }
+
+            const memberData = {
+                id: id,
+                name: document.getElementById('form-name').value.trim(),
+                gender: document.getElementById('form-gender').value,
+                generation: existingMember ? existingMember.generation : 1,
+                orderIndex: document.getElementById('form-order').value.trim() !== "" ? parseInt(document.getElementById('form-order').value) : "",
+                avatar: document.getElementById('form-avatar').value.trim(),
+                status: status,
+                birthYear: document.getElementById('form-birth').value.trim(),
+                deathDate: status === 'Đã mất' ? document.getElementById('form-death').value.trim() : '',
+                burialPlace: status === 'Đã mất' ? document.getElementById('form-burial').value.trim() : '',
+                phone: status === 'Còn sống' ? document.getElementById('form-phone').value.trim() : '',
+                email: status === 'Còn sống' ? document.getElementById('form-email').value.trim() : '',
+                address: status === 'Còn sống' ? document.getElementById('form-address').value.trim() : '',
+                fatherId: fatherId,
+                motherId: document.getElementById('form-mother').value || null,
+                spouseIds: spouseIds,
+                inlawFather: document.getElementById('form-inlaw-father').value.trim(),
+                inlawFatherBirth: document.getElementById('form-inlaw-father-birth').value.trim(),
+                inlawFatherStatus: document.getElementById('form-inlaw-father-status').value,
+                inlawFatherDeath: document.getElementById('form-inlaw-father-status').value === 'Đã mất' ? document.getElementById('form-inlaw-father-death').value.trim() : '',
+                inlawMother: document.getElementById('form-inlaw-mother').value.trim(),
+                inlawMotherBirth: document.getElementById('form-inlaw-mother-birth').value.trim(),
+                inlawMotherStatus: document.getElementById('form-inlaw-mother-status').value,
+                inlawMotherDeath: document.getElementById('form-inlaw-mother-status').value === 'Đã mất' ? document.getElementById('form-inlaw-mother-death').value.trim() : '',
+                location: document.getElementById('form-location').value.trim(),
+                notes: document.getElementById('form-notes').value.trim()
+            };
+
+            const existingIndex = members.findIndex(m => m.id === id);
+            if (existingIndex >= 0) {
+                members[existingIndex] = memberData;
+            } else {
+                members.push(memberData);
+            }
+
+            spouseIds.forEach(spouseId => {
+                const spouse = members.find(m => m.id === spouseId);
+                if (spouse) {
+                    if (!spouse.spouseIds) spouse.spouseIds = [];
+                    if (!spouse.spouseIds.includes(id)) {
+                        spouse.spouseIds.push(id);
+                    }
+                }
+            });
+
+            recalculateAllGenerations();
+            saveMembers();
+            closeModal();
+            updateGenerationFilterOptions();
+            updateAncestorFilterOptions();
+            renderTree();
+            renderTable();
+            renderAnniversaries();
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(memberData)
+            })
+            .then(() => {
+                console.log("Đã đồng bộ dữ liệu lên Google Sheets thành công!");
+            })
+            .catch(err => {
+                console.error("Lỗi đồng bộ Google Sheets:", err);
+            });
+        }
+
+        function deleteMember(id) {
+            let pwd = prompt("Nhập mật khẩu quản trị để xóa thành viên:");
+            if (pwd !== ADMIN_PASSWORD) {
+                alert("Sai mật khẩu! Không được phép xóa.");
+                return;
+            }
+
+            if (confirm("Ông có chắc chắn muốn xóa thành viên này khỏi gia phả?")) {
+                members = members.filter(m => m.id !== id);
+                members.forEach(m => {
+                    if (m.fatherId === id) m.fatherId = null;
+                    if (m.motherId === id) m.motherId = null;
+                    if (m.spouseIds) {
+                        m.spouseIds = m.spouseIds.filter(sId => sId !== id);
+                    }
+                });
+                
+                recalculateAllGenerations();
+                saveMembers();
+                updateGenerationFilterOptions();
+                updateAncestorFilterOptions();
+                renderTree();
+                renderTable();
+                renderAnniversaries();
+            }
+        }
+    </script>
+</body>
+</html>
